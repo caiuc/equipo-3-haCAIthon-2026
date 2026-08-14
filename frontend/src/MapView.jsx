@@ -48,7 +48,7 @@ export default function MapView() {
   const [consulta, setConsulta] = useState('')
   const [grabando, setGrabando] = useState(false)
   const reconocimientoRef = useRef(null)
-  const [tema, setTema] = useState(() => localStorage.getItem('rutalibre-tema') || 'oscuro')
+  const [tema, setTema] = useState(() => localStorage.getItem('rutalibre-tema') || 'claro')
   const [lineasInfo, setLineasInfo] = useState([])
   const temaRef = useRef(tema)
   const rutaGeojsonRef = useRef(null)
@@ -170,16 +170,19 @@ export default function MapView() {
       layout: { 'line-cap': 'round', 'line-join': 'round' },
       paint: { 'line-color': ['get', 'color'], 'line-width': 5, 'line-opacity': 0.9 },
     })
+    // Caminatas: puntos redondos grandes de alto contraste (dasharray [0, 2]
+    // con cap round dibuja círculos, el estilo clásico de tramos a pie)
     map.addLayer({
       id: 'ruta-caminata',
       type: 'line',
       source: 'ruta',
       filter: ['==', ['get', 'caminando'], 1],
+      layout: { 'line-cap': 'round', 'line-join': 'round' },
       paint: {
-        'line-color': temaRef.current === 'claro' ? '#5b6577' : '#c6cddc',
-        'line-width': 3,
-        'line-opacity': 0.8,
-        'line-dasharray': [0.5, 2],
+        'line-color': temaRef.current === 'claro' ? '#1f2937' : '#eef1f8',
+        'line-width': 5,
+        'line-opacity': 0.95,
+        'line-dasharray': [0, 2],
       },
     })
 
