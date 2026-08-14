@@ -78,7 +78,7 @@ export default function MapView() {
         positionOptions: { enableHighAccuracy: true },
         trackUserLocation: true,
       }),
-      'bottom-left'
+      'bottom-right'
     )
     map.on('zoom', escalarMarkers)
 
