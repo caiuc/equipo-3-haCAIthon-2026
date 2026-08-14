@@ -3,10 +3,23 @@ import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { cargarDispositivos, normalizarNombre, ESTADOS } from './lib/dispositivos'
 import { buscarRutas } from './lib/rutas'
+import { interpretarConsulta, asistenteDisponible } from './lib/asistente'
 
 const TOKEN = import.meta.env.VITE_MAPBOX_TOKEN
 const SANTIAGO = [-70.6506, -33.4372]
 const VACIO = { type: 'FeatureCollection', features: [] }
+const CAMPUS_SJ = 'Campus San Joaquín UC, Santiago, Chile'
+
+function ubicacionActual() {
+  return new Promise((resolve) => {
+    if (!navigator.geolocation) return resolve(null)
+    navigator.geolocation.getCurrentPosition(
+      (p) => resolve({ lat: p.coords.latitude, lng: p.coords.longitude }),
+      () => resolve(null),
+      { timeout: 5000 }
+    )
+  })
+}
 
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))
@@ -25,6 +38,9 @@ export default function MapView() {
   const [errorRuta, setErrorRuta] = useState(null)
   const [alerta, setAlerta] = useState(null)
   const [avisoOk, setAvisoOk] = useState(null)
+  const [consulta, setConsulta] = useState('')
+  const [necesidad, setNecesidad] = useState('')
+  const ultimaBusquedaRef = useRef(null)
   const estacionesMalasRef = useRef(new Map())
   const alternativasRef = useRef([])
   const dispositivosRef = useRef(null)
@@ -150,17 +166,15 @@ export default function MapView() {
     }
   }
 
-  async function onBuscar(e) {
-    e.preventDefault()
-    const o = origen.trim().slice(0, 120)
-    const d = destino.trim().slice(0, 120)
-    if (!o || !d || buscando) return
+  // o puede ser texto o coordenadas {lat, lng} (geolocalización del asistente)
+  async function buscar(o, d) {
     setBuscando(true)
     setErrorRuta(null)
     setAlerta(null)
     setAvisoOk(null)
     try {
       const rutas = await buscarRutas(o, d)
+      ultimaBusquedaRef.current = { o, d }
       alternativasRef.current = rutas
       dibujarRuta(rutas[0])
       const malas = estacionesProblema(rutas[0])
@@ -171,6 +185,46 @@ export default function MapView() {
       mapRef.current?.getSource('ruta')?.setData(VACIO)
       setErrorRuta('No se encontró una ruta. Revisa origen y destino.')
     } finally {
+      setBuscando(false)
+    }
+  }
+
+  async function onBuscar(e) {
+    e.preventDefault()
+    const o = origen.trim().slice(0, 120)
+    const d = destino.trim().slice(0, 120)
+    if (!o || !d || buscando) return
+    setNecesidad('')
+    await buscar(o, d)
+  }
+
+  async function onAsistente(e) {
+    e.preventDefault()
+    const q = consulta.trim().slice(0, 200)
+    if (!q || buscando) return
+    setBuscando(true)
+    setErrorRuta(null)
+    try {
+      const r = await interpretarConsulta(q)
+      if (!r.destino) {
+        setErrorRuta('No entendí el destino. Intenta describirlo de otra forma.')
+        return
+      }
+      let o = r.origen
+      if (!o) {
+        const pos = await ubicacionActual()
+        o = pos || CAMPUS_SJ
+        setOrigen(pos ? 'Mi ubicación' : CAMPUS_SJ)
+      } else {
+        setOrigen(o)
+      }
+      setDestino(r.destino)
+      setNecesidad(r.necesidad)
+      setBuscando(false)
+      await buscar(o, r.destino)
+    } catch (err) {
+      console.error(err)
+      setErrorRuta('El asistente no pudo procesar la consulta.')
       setBuscando(false)
     }
   }
@@ -208,9 +262,8 @@ export default function MapView() {
       // 1) buscar entre las alternativas ya recibidas una sin estaciones malas
       let limpia = alternativasRef.current.slice(1).find((r) => estacionesProblema(r).length === 0)
       // 2) si no hay, pedir ruta solo en bus (evita el Metro por completo)
-      if (!limpia) {
-        const o = origen.trim().slice(0, 120)
-        const d = destino.trim().slice(0, 120)
+      if (!limpia && ultimaBusquedaRef.current) {
+        const { o, d } = ultimaBusquedaRef.current
         const soloBus = await buscarRutas(o, d, { soloBus: true })
         limpia = soloBus.find((r) => estacionesProblema(r).length === 0)
       }
@@ -244,6 +297,22 @@ export default function MapView() {
       <div className="panel">
         <h1>RutaLibre</h1>
         <p className="subtitulo">Accesibilidad Metro de Santiago</p>
+
+        {asistenteDisponible && (
+          <form className="asistente" onSubmit={onAsistente}>
+            <input
+              type="text"
+              placeholder="Ej: voy en silla de ruedas al Costanera Center"
+              value={consulta}
+              maxLength={200}
+              onChange={(e) => setConsulta(e.target.value)}
+            />
+            <button type="submit" disabled={!mapListo || buscando} title="Preguntar al asistente">
+              ✨
+            </button>
+          </form>
+        )}
+        {necesidad && <p className="chip-necesidad">♿ {necesidad.replaceAll('_', ' ')}</p>}
 
         <form className="buscador" onSubmit={onBuscar}>
           <input

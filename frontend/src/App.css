@@ -31,6 +31,56 @@
   color: #9aa3b8;
 }
 
+.asistente {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.asistente input {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: #eef1f8;
+  font-size: 0.8rem;
+  outline: none;
+}
+
+.asistente input:focus {
+  border-color: rgba(255, 210, 127, 0.6);
+}
+
+.asistente input::placeholder {
+  color: #9aa3b8;
+}
+
+.asistente button {
+  background: rgba(255, 210, 127, 0.15);
+  border: 1px solid rgba(255, 210, 127, 0.4);
+  border-radius: 8px;
+  padding: 0 12px;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.asistente button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.chip-necesidad {
+  display: inline-block;
+  margin: 0 0 8px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(45, 212, 167, 0.15);
+  border: 1px solid rgba(45, 212, 167, 0.4);
+  color: #7fe8c9;
+  font-size: 0.75rem;
+}
+
 .buscador {
   display: flex;
   flex-direction: column;

@@ -56,8 +56,8 @@ export async function buscarRutas(origen, destino, { soloBus = false } = {}) {
       'X-Goog-FieldMask': FIELD_MASK,
     },
     body: JSON.stringify({
-      origin: { address: origen },
-      destination: { address: destino },
+      origin: comoWaypoint(origen),
+      destination: comoWaypoint(destino),
       travelMode: 'TRANSIT',
       computeAlternativeRoutes: true,
       languageCode: 'es-CL',
@@ -70,6 +70,13 @@ export async function buscarRutas(origen, destino, { soloBus = false } = {}) {
   const rutas = (data.routes || []).map(parsearRuta)
   if (!rutas.length) throw new Error('sin rutas')
   return rutas
+}
+
+// Acepta dirección como texto o coordenadas {lat, lng} (geolocalización)
+function comoWaypoint(x) {
+  return typeof x === 'string'
+    ? { address: x }
+    : { location: { latLng: { latitude: x.lat, longitude: x.lng } } }
 }
 
 function parsearRuta(route) {
