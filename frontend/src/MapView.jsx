@@ -48,6 +48,7 @@ export default function MapView() {
   const temaRef = useRef(tema)
   const rutaGeojsonRef = useRef(null)
   const lineasRef = useRef(null)
+  const markersRef = useRef([])
   const ultimaBusquedaRef = useRef(null)
   const estacionesMalasRef = useRef(new Map())
   const alternativasRef = useRef([])
@@ -232,11 +233,50 @@ export default function MapView() {
     return malas
   }
 
+  function limpiarMarkers() {
+    for (const m of markersRef.current) m.remove()
+    markersRef.current = []
+  }
+
+  function crearMarker(map, lngLat, clase, contenido, color, titulo) {
+    const el = document.createElement('div')
+    el.className = `marker ${clase}`
+    el.textContent = contenido
+    if (color) el.style.background = color
+    if (titulo) el.title = titulo
+    markersRef.current.push(
+      new mapboxgl.Marker({ element: el, anchor: 'center' }).setLngLat(lngLat).addTo(map)
+    )
+  }
+
   function dibujarRuta(r) {
     setRuta(r)
     rutaGeojsonRef.current = r.geojson
     const map = mapRef.current
     map.getSource('ruta').setData(r.geojson)
+
+    // Marcadores: 📍 posición inicial, 🚌/🚇 cada abordaje, 🏁 destino
+    limpiarMarkers()
+    const feats = r.geojson.features
+    if (feats.length) {
+      const inicio = feats[0].geometry.coordinates[0]
+      const finCoords = feats[feats.length - 1].geometry.coordinates
+      const fin = finCoords[finCoords.length - 1]
+      crearMarker(map, inicio, 'marker-origen', '📍', null, 'Estás aquí')
+      for (const f of feats) {
+        if (f.properties.caminando === 0) {
+          crearMarker(
+            map,
+            f.geometry.coordinates[0],
+            'marker-transporte',
+            f.properties.icono || '🚌',
+            f.properties.color,
+            f.properties.etiqueta
+          )
+        }
+      }
+      crearMarker(map, fin, 'marker-destino', '🏁', null, 'Destino')
+    }
     const coords = r.geojson.features.flatMap((f) => f.geometry.coordinates)
     if (coords.length) {
       const bounds = coords.reduce(
@@ -261,6 +301,7 @@ export default function MapView() {
     } catch (err) {
       console.error(err)
       setRuta(null)
+      limpiarMarkers()
       mapRef.current?.getSource('ruta')?.setData(VACIO)
       setErrorRuta('No se encontró una ruta. Revisa origen y destino.')
     } finally {

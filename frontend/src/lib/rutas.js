@@ -130,7 +130,12 @@ function parsearRuta(route) {
       if (coords.length) {
         tramos.push({
           type: 'Feature',
-          properties: { color: linea.color || '#4da3ff', caminando: 0 },
+          properties: {
+            color: linea.color || '#4da3ff',
+            caminando: 0,
+            icono: ICONOS[vehiculo] || '🚍',
+            etiqueta,
+          },
           geometry: { type: 'LineString', coordinates: coords },
         })
       }
