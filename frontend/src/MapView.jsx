@@ -144,8 +144,7 @@ export default function MapView() {
         paint: {
           'line-color': ['get', 'color'],
           'line-width': ['interpolate', ['linear'], ['zoom'], 10, 1.5, 14, 4],
-          // Modo foco: con una ruta activa, la red pasa a segundo plano
-          'line-opacity': rutaGeojsonRef.current?.features?.length ? 0.12 : 0.55,
+          'line-opacity': 0.55,
         },
       })
     }
@@ -278,16 +277,8 @@ export default function MapView() {
     )
   }
 
-  function atenuarLineas(atenuar) {
-    const map = mapRef.current
-    if (map?.getLayer('metro-lineas')) {
-      map.setPaintProperty('metro-lineas', 'line-opacity', atenuar ? 0.12 : 0.55)
-    }
-  }
-
   function dibujarRuta(r) {
     setRuta(r)
-    atenuarLineas(true)
     // Escaleras mecánicas malas en la ruta elegida: advertencia, no bloquea
     setAvisoEscaleras(cruzarEstaciones(r, escalerasMalasRef.current))
     rutaGeojsonRef.current = r.geojson
@@ -343,7 +334,6 @@ export default function MapView() {
       setAvisoEscaleras([])
       limpiarMarkers()
       rutaGeojsonRef.current = null
-      atenuarLineas(false)
       mapRef.current?.getSource('ruta')?.setData(VACIO)
       setErrorRuta('No se encontró una ruta. Revisa origen y destino.')
     } finally {
