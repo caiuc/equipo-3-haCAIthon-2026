@@ -46,6 +46,7 @@ export default function MapView() {
   const [tema, setTema] = useState(() => localStorage.getItem('rutalibre-tema') || 'oscuro')
   const temaRef = useRef(tema)
   const rutaGeojsonRef = useRef(null)
+  const lineasRef = useRef(null)
   const ultimaBusquedaRef = useRef(null)
   const estacionesMalasRef = useRef(new Map())
   const alternativasRef = useRef([])
@@ -66,8 +67,15 @@ export default function MapView() {
 
     map.on('load', async () => {
       try {
-        const { geojson, fueraServicio, total, conDatos, estacionesMalas } = await cargarDispositivos()
+        const [{ geojson, fueraServicio, total, conDatos, estacionesMalas }, lineas] =
+          await Promise.all([
+            cargarDispositivos(),
+            fetch('/data/metro_lineas.geojson')
+              .then((r) => (r.ok ? r.json() : null))
+              .catch(() => null),
+          ])
         if (desmontado) return
+        lineasRef.current = lineas
         estacionesMalasRef.current = estacionesMalas
         dispositivosRef.current = geojson
         setResumen({ fueraServicio, total, conDatos })
@@ -108,6 +116,21 @@ export default function MapView() {
   // base (setStyle borra todo lo custom, hay que volver a agregarlo).
   function agregarCapas(map) {
     if (map.getSource('dispositivos')) return
+    // Trazado de las líneas de Metro (estático, OSM), debajo de ruta y puntos
+    if (lineasRef.current) {
+      map.addSource('metro-lineas', { type: 'geojson', data: lineasRef.current })
+      map.addLayer({
+        id: 'metro-lineas',
+        type: 'line',
+        source: 'metro-lineas',
+        layout: { 'line-cap': 'round', 'line-join': 'round' },
+        paint: {
+          'line-color': ['get', 'color'],
+          'line-width': ['interpolate', ['linear'], ['zoom'], 10, 1.5, 14, 4],
+          'line-opacity': 0.55,
+        },
+      })
+    }
     map.addSource('ruta', { type: 'geojson', data: rutaGeojsonRef.current || VACIO })
     map.addLayer({
       id: 'ruta-transporte',
