@@ -60,6 +60,51 @@
   inset: 0;
 }
 
+/* Indicador de carga inicial */
+.cargando {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  z-index: 5;
+  pointer-events: none;
+}
+
+.cargando-caja {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 18px 26px;
+  border-radius: 14px;
+  background: var(--panel-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--panel-borde);
+  box-shadow: var(--sombra);
+  color: var(--texto);
+  font-size: 0.85rem;
+}
+
+.cargando-caja p {
+  margin: 0;
+}
+
+.spinner {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 3px solid var(--input-borde);
+  border-top-color: var(--acento);
+  animation: girar 0.8s linear infinite;
+}
+
+@keyframes girar {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .panel {
   position: fixed;
   top: 16px;
@@ -158,12 +203,26 @@
 
 .asistente {
   display: flex;
+  flex-direction: column;
   gap: 6px;
   margin-bottom: 8px;
 }
 
-.asistente input {
+.asistente-botones {
+  display: flex;
+  gap: 6px;
+}
+
+.asistente-botones .btn-ia {
   flex: 1;
+  padding: 7px 10px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ambar);
+}
+
+.asistente input {
+  width: 100%;
   background: var(--input-bg);
   border: 1px solid var(--input-borde);
   border-radius: 8px;

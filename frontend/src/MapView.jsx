@@ -419,6 +419,10 @@ export default function MapView() {
     if (!q || buscando) return
     setBuscando(true)
     setErrorRuta(null)
+    // El finally garantiza soltar "Buscando…" en todos los caminos (antes un
+    // return temprano dejaba el botón pegado si Gemini no entendía el destino)
+    let origenRuta = null
+    let destinoRuta = null
     try {
       const r = await interpretarConsulta(q)
       if (!r.destino) {
@@ -434,13 +438,15 @@ export default function MapView() {
         setOrigen(o)
       }
       setDestino(r.destino)
-      setBuscando(false)
-      await buscar(o, r.destino)
+      origenRuta = o
+      destinoRuta = r.destino
     } catch (err) {
       console.error(err)
       setErrorRuta('El asistente no pudo procesar la consulta.')
+    } finally {
       setBuscando(false)
     }
+    if (destinoRuta) await buscar(origenRuta, destinoRuta)
   }
 
   // Botón demo Feria: marca como caído el ascensor de una estación de la
@@ -520,6 +526,14 @@ export default function MapView() {
   return (
     <>
       <div ref={containerRef} className="mapa" />
+      {!mapListo && !error && (
+        <div className="cargando">
+          <div className="cargando-caja">
+            <div className="spinner" />
+            <p>Cargando mapa y datos del Metro…</p>
+          </div>
+        </div>
+      )}
       {lineasInfo.length > 0 && (
         <div className="leyenda-lineas">
           {lineasInfo.map((l) => (
@@ -552,20 +566,26 @@ export default function MapView() {
               maxLength={200}
               onChange={(e) => setConsulta(e.target.value)}
             />
-            <button type="submit" disabled={!mapListo || buscando} title="Preguntar al asistente">
-              ✨
-            </button>
-            {SpeechRecognition && (
+            <div className="asistente-botones">
               <button
-                type="button"
-                className={grabando ? 'btn-mic grabando' : 'btn-mic'}
-                onClick={onMicrofono}
-                disabled={!mapListo || buscando}
-                title={grabando ? 'Escuchando… toca para detener' : 'Consultar por voz'}
+                type="submit"
+                className="btn-ia"
+                disabled={!mapListo || buscando || !consulta.trim()}
               >
-                🎤
+                ✨ Buscar con IA
               </button>
-            )}
+              {SpeechRecognition && (
+                <button
+                  type="button"
+                  className={grabando ? 'btn-mic grabando' : 'btn-mic'}
+                  onClick={onMicrofono}
+                  disabled={!mapListo || buscando}
+                  title={grabando ? 'Escuchando… toca para detener' : 'Consultar por voz'}
+                >
+                  🎤
+                </button>
+              )}
+            </div>
           </form>
         )}
         <form className="buscador" onSubmit={onBuscar}>
@@ -583,7 +603,7 @@ export default function MapView() {
             maxLength={120}
             onChange={(e) => setDestino(e.target.value)}
           />
-          <button type="submit" disabled={!mapListo || buscando}>
+          <button type="submit" disabled={!mapListo || buscando || !destino.trim()}>
             {buscando ? 'Buscando…' : 'Buscar ruta'}
           </button>
         </form>
