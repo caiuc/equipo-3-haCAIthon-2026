@@ -110,8 +110,15 @@ function parsearRuta(route) {
         vehiculo === 'BUS' && linea.nameShort
           ? `Micro ${linea.nameShort}`
           : linea.name || linea.nameShort || 'Transporte'
+      // En hora punta L2/L4/L5 operan con ruta expresa: el headsign llega
+      // como "Terminal (Ruta Roja)". Separamos color de tren y dirección.
+      const headsign = t.headsign || null
+      const expresa = /\(ruta (roja|verde)\)/i.exec(headsign || '')?.[1] || null
+      const direccion = headsign ? headsign.replace(/\s*\(.*\)\s*$/, '') : null
       pasos.push({
         tipo: 'transit',
+        direccion,
+        expresa,
         icono: ICONOS[vehiculo] || '🚍',
         etiqueta,
         desde,
@@ -128,7 +135,6 @@ function parsearRuta(route) {
         })
       }
       if (vehiculo === 'SUBWAY') {
-        const direccion = t.headsign || null
         estacionesMetro.push({ nombre: desde, direccion }, { nombre: hasta, direccion })
       }
     } else {

@@ -389,6 +389,28 @@
   letter-spacing: 0.02em;
 }
 
+/* Tren expreso de hora punta (L2/L4/L5): a cuál subirse */
+.chip-expresa {
+  display: inline-block;
+  margin-left: 5px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.expresa-roja {
+  background: rgba(231, 76, 60, 0.16);
+  color: #e74c3c;
+  border: 1px solid rgba(231, 76, 60, 0.45);
+}
+
+.expresa-verde {
+  background: rgba(39, 174, 96, 0.16);
+  color: #27ae60;
+  border: 1px solid rgba(39, 174, 96, 0.5);
+}
+
 .badge-caminata {
   background: var(--badge-caminata-bg);
   color: var(--badge-caminata-texto);

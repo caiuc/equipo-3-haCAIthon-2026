@@ -495,10 +495,19 @@ export default function MapView() {
                       <span className="badge" style={{ background: p.color, color: p.textColor }}>
                         {p.icono} {p.etiqueta}
                       </span>
+                      {p.expresa && (
+                        <span className={`chip-expresa expresa-${p.expresa.toLowerCase()}`}>
+                          ● Ruta {p.expresa}
+                        </span>
+                      )}
                       <p className="paso-ruta">
                         {p.desde} <span className="paso-flecha">→</span> {p.hasta}
                       </p>
-                      {p.paradas != null && <p className="paso-meta">{p.paradas} paradas</p>}
+                      <p className="paso-meta">
+                        {p.direccion ? `dirección ${p.direccion}` : ''}
+                        {p.direccion && p.paradas != null ? ' · ' : ''}
+                        {p.paradas != null ? `${p.paradas} paradas` : ''}
+                      </p>
                     </>
                   ) : (
                     <span className="badge badge-caminata">
