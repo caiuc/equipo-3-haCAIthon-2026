@@ -93,6 +93,17 @@ export default function MapView() {
           id: 'dispositivos-circulos',
           type: 'circle',
           source: 'dispositivos',
+          // Los dispositivos de una estación comparten coordenada: el peor
+          // estado se dibuja encima para que un ascensor malo siempre se vea.
+          layout: {
+            'circle-sort-key': [
+              'match',
+              ['get', 'estado'],
+              'fuera_servicio', 2,
+              'desconocido', 1,
+              0,
+            ],
+          },
           paint: {
             'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 3, 14, 7],
             'circle-color': [
