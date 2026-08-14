@@ -1,5 +1,6 @@
 const KEY = import.meta.env.VITE_GEMINI_KEY
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${KEY}`
+// gemini-3.1-flash-lite: el alias flash-latest daba 503 por alta demanda (14/08)
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${KEY}`
 
 export const asistenteDisponible = Boolean(KEY)
 
