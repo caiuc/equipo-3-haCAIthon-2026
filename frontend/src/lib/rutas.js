@@ -106,8 +106,14 @@ function parsearRuta(route) {
           ? `Micro ${linea.nameShort}`
           : linea.name || linea.nameShort || 'Transporte'
       pasos.push({
+        tipo: 'transit',
         icono: ICONOS[vehiculo] || '🚍',
-        texto: `${etiqueta}: ${desde} → ${hasta} (${t.stopCount ?? '?'} paradas)`,
+        etiqueta,
+        desde,
+        hasta,
+        paradas: t.stopCount ?? null,
+        color: linea.color || '#4da3ff',
+        textColor: linea.textColor || '#ffffff',
       })
       if (coords.length) {
         tramos.push({
@@ -123,10 +129,10 @@ function parsearRuta(route) {
     } else if (coords.length) {
       // Tramos a pie: colapsar instrucciones consecutivas en un solo paso
       const ultimo = pasos[pasos.length - 1]
-      if (ultimo?.esCaminata) {
+      if (ultimo?.tipo === 'walk') {
         tramos[tramos.length - 1].geometry.coordinates.push(...coords)
       } else {
-        pasos.push({ icono: '🚶', texto: 'Caminata', esCaminata: true })
+        pasos.push({ tipo: 'walk', icono: '🚶' })
         tramos.push({
           type: 'Feature',
           properties: { color: '#9aa3b8', caminando: 1 },

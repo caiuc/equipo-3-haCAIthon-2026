@@ -96,17 +96,6 @@
   cursor: default;
 }
 
-.chip-necesidad {
-  display: inline-block;
-  margin: 0 0 8px;
-  padding: 3px 10px;
-  border-radius: 999px;
-  background: rgba(45, 212, 167, 0.15);
-  border: 1px solid rgba(45, 212, 167, 0.4);
-  color: #7fe8c9;
-  font-size: 0.75rem;
-}
-
 .buscador {
   display: flex;
   flex-direction: column;
@@ -241,19 +230,81 @@
   font-weight: 600;
 }
 
-.itinerario ol {
+/* Timeline vertical del itinerario */
+.timeline {
   list-style: none;
   margin: 0;
   padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
   font-size: 0.8rem;
   color: #c6cddc;
 }
 
-.paso-icono {
-  margin-right: 4px;
+.timeline li {
+  position: relative;
+  padding-left: 22px;
+  padding-bottom: 12px;
+}
+
+/* riel que conecta los pasos */
+.timeline li::before {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 16px;
+  bottom: -2px;
+  width: 2px;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.timeline li:last-child::before {
+  display: none;
+}
+
+.timeline li:last-child {
+  padding-bottom: 0;
+}
+
+/* punto de color del tramo */
+.timeline li::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 5px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--paso-color, #6b7280);
+  border: 2px solid rgba(10, 12, 20, 0.9);
+}
+
+.badge {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.badge-caminata {
+  background: rgba(255, 255, 255, 0.09);
+  color: #aab2c4;
+  font-weight: 600;
+}
+
+.paso-ruta {
+  margin: 5px 0 0;
+  line-height: 1.35;
+}
+
+.paso-flecha {
+  color: #9aa3b8;
+}
+
+.paso-meta {
+  margin: 2px 0 0;
+  font-size: 0.7rem;
+  color: #9aa3b8;
 }
 
 .btn-demo {

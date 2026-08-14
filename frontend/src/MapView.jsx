@@ -39,7 +39,6 @@ export default function MapView() {
   const [alerta, setAlerta] = useState(null)
   const [avisoOk, setAvisoOk] = useState(null)
   const [consulta, setConsulta] = useState('')
-  const [necesidad, setNecesidad] = useState('')
   const ultimaBusquedaRef = useRef(null)
   const estacionesMalasRef = useRef(new Map())
   const alternativasRef = useRef([])
@@ -214,7 +213,6 @@ export default function MapView() {
     const o = origen.trim().slice(0, 120)
     const d = destino.trim().slice(0, 120)
     if (!o || !d || buscando) return
-    setNecesidad('')
     await buscar(o, d)
   }
 
@@ -239,7 +237,6 @@ export default function MapView() {
         setOrigen(o)
       }
       setDestino(r.destino)
-      setNecesidad(r.necesidad)
       setBuscando(false)
       await buscar(o, r.destino)
     } catch (err) {
@@ -344,8 +341,6 @@ export default function MapView() {
             </button>
           </form>
         )}
-        {necesidad && <p className="chip-necesidad">♿ {necesidad.replaceAll('_', ' ')}</p>}
-
         <form className="buscador" onSubmit={onBuscar}>
           <input
             type="text"
@@ -404,10 +399,22 @@ export default function MapView() {
         {ruta && (
           <div className="itinerario">
             <p className="ruta-duracion">⏱ {ruta.duracionMin} min</p>
-            <ol>
+            <ol className="timeline">
               {ruta.pasos.map((p, i) => (
-                <li key={i}>
-                  <span className="paso-icono">{p.icono}</span> {p.texto}
+                <li key={i} style={{ '--paso-color': p.tipo === 'transit' ? p.color : '#6b7280' }}>
+                  {p.tipo === 'transit' ? (
+                    <>
+                      <span className="badge" style={{ background: p.color, color: p.textColor }}>
+                        {p.icono} {p.etiqueta}
+                      </span>
+                      <p className="paso-ruta">
+                        {p.desde} <span className="paso-flecha">→</span> {p.hasta}
+                      </p>
+                      {p.paradas != null && <p className="paso-meta">{p.paradas} paradas</p>}
+                    </>
+                  ) : (
+                    <span className="badge badge-caminata">🚶 Caminata</span>
+                  )}
                 </li>
               ))}
             </ol>
