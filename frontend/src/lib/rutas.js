@@ -10,6 +10,7 @@ const FIELD_MASK = [
   'routes.legs.steps.transitDetails.transitLine.nameShort',
   'routes.legs.steps.transitDetails.transitLine.color',
   'routes.legs.steps.transitDetails.transitLine.vehicle.type',
+  'routes.legs.steps.transitDetails.headsign',
   'routes.legs.steps.transitDetails.stopDetails.departureStop.name',
   'routes.legs.steps.transitDetails.stopDetails.arrivalStop.name',
   'routes.legs.steps.transitDetails.stopCount',
@@ -113,7 +114,10 @@ function parsearRuta(route) {
           geometry: { type: 'LineString', coordinates: coords },
         })
       }
-      if (vehiculo === 'SUBWAY') estacionesMetro.push(desde, hasta)
+      if (vehiculo === 'SUBWAY') {
+        const direccion = t.headsign || null
+        estacionesMetro.push({ nombre: desde, direccion }, { nombre: hasta, direccion })
+      }
     } else if (coords.length) {
       // Tramos a pie: colapsar instrucciones consecutivas en un solo paso
       const ultimo = pasos[pasos.length - 1]

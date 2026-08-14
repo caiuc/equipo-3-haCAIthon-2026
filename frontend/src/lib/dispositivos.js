@@ -59,7 +59,13 @@ export async function cargarDispositivos() {
         if (!estacionesMalas.has(clave)) {
           estacionesMalas.set(clave, { nombre: f.properties.nombre_estacion, detalles: [] })
         }
-        estacionesMalas.get(clave).detalles.push(info.texto || f.properties.equipo)
+        // Si el texto dice "dirección <terminal>", el ascensor sirve solo a ese
+        // andén; sin dirección es de acceso/boletería y afecta ambos sentidos.
+        const dir = /direcci[oó]n\s+(.+?)\s*$/i.exec(info.texto || '')
+        estacionesMalas.get(clave).detalles.push({
+          texto: info.texto || f.properties.equipo,
+          direccion: dir ? dir[1] : null,
+        })
       }
     }
   }

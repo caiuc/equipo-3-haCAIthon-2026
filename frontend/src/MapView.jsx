@@ -148,16 +148,27 @@ export default function MapView() {
     }
   }, [])
 
-  // Estaciones de la ruta que tienen algún ascensor fuera de servicio
+  // Estaciones de la ruta que tienen algún ascensor fuera de servicio.
+  // Cada detalle se compara con la dirección del tren (headsign): si el
+  // ascensor sirve a un andén de otra dirección, se marca como dudoso en vez
+  // de descartarlo (los nombres de terminal de Metro y Google no siempre calzan).
   function estacionesProblema(r) {
     const vistas = new Set()
     const malas = []
     for (const est of r.estacionesMetro) {
-      const clave = normalizarNombre(est)
+      const clave = normalizarNombre(est.nombre)
       const info = estacionesMalasRef.current.get(clave)
       if (info && !vistas.has(clave)) {
         vistas.add(clave)
-        malas.push(info)
+        const detalles = info.detalles.map((d) => ({
+          ...d,
+          quizasNoAfecta: Boolean(
+            d.direccion &&
+              est.direccion &&
+              normalizarNombre(d.direccion) !== normalizarNombre(est.direccion)
+          ),
+        }))
+        malas.push({ nombre: info.nombre, detalles, direccionViaje: est.direccion })
       }
     }
     return malas
@@ -246,11 +257,14 @@ export default function MapView() {
     const r = ruta
     if (!r) return
     const objetivo = r.estacionesMetro.find(
-      (est) => !estacionesMalasRef.current.has(normalizarNombre(est))
+      (est) => !estacionesMalasRef.current.has(normalizarNombre(est.nombre))
     )
     if (!objetivo) return
-    const clave = normalizarNombre(objetivo)
-    const info = { nombre: objetivo, detalles: ['Falla simulada para demo'] }
+    const clave = normalizarNombre(objetivo.nombre)
+    const info = {
+      nombre: objetivo.nombre,
+      detalles: [{ texto: 'Falla simulada para demo', direccion: null }],
+    }
     estacionesMalasRef.current.set(clave, info)
 
     const geojson = dispositivosRef.current
@@ -352,8 +366,17 @@ export default function MapView() {
             <ul>
               {alerta.malas.map((m) => (
                 <li key={m.nombre}>
-                  <strong>{m.nombre}</strong>: {m.detalles.length}{' '}
-                  {m.detalles.length === 1 ? 'ascensor fuera de servicio' : 'ascensores fuera de servicio'}
+                  <strong>{m.nombre}</strong>
+                  <ul className="alerta-detalles">
+                    {m.detalles.map((d, i) => (
+                      <li key={i} className={d.quizasNoAfecta ? 'detalle-dudoso' : ''}>
+                        {d.quizasNoAfecta ? '❓' : '⛔'} {d.texto}
+                        {d.quizasNoAfecta && (
+                          <em> — tu tren va dirección {m.direccionViaje}; podría no afectarte</em>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
                 </li>
               ))}
             </ul>

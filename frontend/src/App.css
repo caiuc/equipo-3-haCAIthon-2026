@@ -147,6 +147,21 @@
   color: #e8caca;
 }
 
+.alerta-detalles {
+  margin-top: 3px !important;
+  padding-left: 4px !important;
+  font-size: 0.72rem;
+  color: #d8b8b8;
+}
+
+.detalle-dudoso {
+  color: #b8b393;
+}
+
+.detalle-dudoso em {
+  color: #d6cfa6;
+}
+
 .alerta button {
   width: 100%;
   background: #ff5c5c;
