@@ -27,6 +27,7 @@ export default function MapView() {
   const [avisoOk, setAvisoOk] = useState(null)
   const estacionesMalasRef = useRef(new Map())
   const alternativasRef = useRef([])
+  const dispositivosRef = useRef(null)
 
   useEffect(() => {
     if (!TOKEN) return
@@ -46,6 +47,7 @@ export default function MapView() {
         const { geojson, fueraServicio, total, conDatos, estacionesMalas } = await cargarDispositivos()
         if (desmontado) return
         estacionesMalasRef.current = estacionesMalas
+        dispositivosRef.current = geojson
         setResumen({ fueraServicio, total, conDatos })
 
         map.addSource('ruta', { type: 'geojson', data: VACIO })
@@ -173,6 +175,32 @@ export default function MapView() {
     }
   }
 
+  // Botón demo Feria: marca como caído el ascensor de una estación de la
+  // ruta actual, pinta sus puntos en rojo y dispara la alerta de recalculo.
+  function onSimularFalla() {
+    const r = ruta
+    if (!r) return
+    const objetivo = r.estacionesMetro.find(
+      (est) => !estacionesMalasRef.current.has(normalizarNombre(est))
+    )
+    if (!objetivo) return
+    const clave = normalizarNombre(objetivo)
+    const info = { nombre: objetivo, detalles: ['Falla simulada para demo'] }
+    estacionesMalasRef.current.set(clave, info)
+
+    const geojson = dispositivosRef.current
+    if (geojson) {
+      for (const f of geojson.features) {
+        if (normalizarNombre(f.properties.nombre_estacion) === clave) {
+          f.properties.estado = 'fuera_servicio'
+        }
+      }
+      mapRef.current?.getSource('dispositivos')?.setData(geojson)
+    }
+    setAvisoOk(null)
+    setAlerta({ malas: [info], simulada: true })
+  }
+
   async function onRecalcular() {
     if (buscando) return
     setBuscando(true)
@@ -271,6 +299,12 @@ export default function MapView() {
               ))}
             </ol>
           </div>
+        )}
+
+        {ruta && !alerta && ruta.estacionesMetro.length > 0 && (
+          <button type="button" className="btn-demo" onClick={onSimularFalla}>
+            ⚡ Simular falla de ascensor
+          </button>
         )}
 
         {error && <p className="panel-error">{error}</p>}

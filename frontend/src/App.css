@@ -158,6 +158,22 @@
   margin-right: 4px;
 }
 
+.btn-demo {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffd27f;
+  border: 1px dashed rgba(255, 210, 127, 0.5);
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  margin-bottom: 10px;
+}
+
+.btn-demo:hover {
+  background: rgba(255, 210, 127, 0.12);
+}
+
 .panel-resumen {
   margin: 0 0 10px;
   font-size: 0.85rem;
