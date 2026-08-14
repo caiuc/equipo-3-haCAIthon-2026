@@ -72,11 +72,15 @@ export async function buscarRutas(origen, destino, { soloBus = false } = {}) {
   return rutas
 }
 
-// Acepta dirección como texto o coordenadas {lat, lng} (geolocalización)
+// Acepta dirección como texto o coordenadas {lat, lng} (geolocalización).
+// Ancla el texto a Santiago: sin eso el geocoder devuelve lugares ambiguos
+// (ej. "Irarrazabal" solo caía en un pasaje de Maipú) o ninguna ruta.
 function comoWaypoint(x) {
-  return typeof x === 'string'
-    ? { address: x }
-    : { location: { latLng: { latitude: x.lat, longitude: x.lng } } }
+  if (typeof x !== 'string') {
+    return { location: { latLng: { latitude: x.lat, longitude: x.lng } } }
+  }
+  const anclada = /santiago|chile/i.test(x) ? x : `${x}, Santiago, Chile`
+  return { address: anclada }
 }
 
 function parsearRuta(route) {

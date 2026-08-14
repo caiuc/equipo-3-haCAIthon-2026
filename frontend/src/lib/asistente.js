@@ -8,7 +8,8 @@ const INSTRUCCION =
   'Extrae de la consulta del usuario: origen, destino y necesidad de accesibilidad. ' +
   'Si no menciona origen, origen debe ser cadena vacía. ' +
   'necesidad: silla_ruedas, movilidad_reducida, coche_bebe u otra palabra breve (vacía si no menciona). ' +
-  'Los lugares están en Santiago de Chile; devuelve nombres de lugares tal como se buscarían en un mapa.'
+  'Los lugares están en Santiago de Chile; devuelve nombres de lugares tal como se buscarían en un mapa. ' +
+  'Si el lugar es o suena a una estación de Metro de Santiago, devuélvelo como "Metro <nombre>" (ej: "Metro Irarrázaval").'
 
 // Lenguaje natural → { origen, destino, necesidad } vía Gemini con salida JSON forzada.
 export async function interpretarConsulta(texto) {
