@@ -518,6 +518,8 @@
 .marker {
   width: 30px;
   height: 30px;
+  transform-origin: center;
+  transition: transform 0.12s ease-out;
   border-radius: 50%;
   display: grid;
   place-items: center;

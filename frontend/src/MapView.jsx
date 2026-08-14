@@ -73,6 +73,14 @@ export default function MapView() {
     })
     mapRef.current = map
     map.addControl(new mapboxgl.NavigationControl(), 'bottom-right')
+    map.addControl(
+      new mapboxgl.GeolocateControl({
+        positionOptions: { enableHighAccuracy: true },
+        trackUserLocation: true,
+      }),
+      'bottom-left'
+    )
+    map.on('zoom', escalarMarkers)
 
     map.on('load', async () => {
       try {
@@ -269,15 +277,29 @@ export default function MapView() {
     markersRef.current = []
   }
 
+  // El marker escala con el zoom; Mapbox usa transform en el elemento raíz
+  // para posicionarlo, así que el scale va en un hijo interno.
   function crearMarker(map, lngLat, clase, contenido, color, titulo) {
     const el = document.createElement('div')
-    el.className = `marker ${clase}`
-    el.textContent = contenido
-    if (color) el.style.background = color
-    if (titulo) el.title = titulo
+    const inner = document.createElement('div')
+    inner.className = `marker ${clase}`
+    inner.textContent = contenido
+    if (color) inner.style.background = color
+    if (titulo) inner.title = titulo
+    el.appendChild(inner)
     markersRef.current.push(
       new mapboxgl.Marker({ element: el, anchor: 'center' }).setLngLat(lngLat).addTo(map)
     )
+  }
+
+  function escalarMarkers() {
+    const map = mapRef.current
+    if (!map) return
+    const escala = Math.min(1, Math.max(0.45, (map.getZoom() - 8.5) / 5.5))
+    for (const m of markersRef.current) {
+      const inner = m.getElement().firstChild
+      if (inner) inner.style.transform = `scale(${escala})`
+    }
   }
 
   function dibujarRuta(r) {
@@ -309,6 +331,7 @@ export default function MapView() {
         }
       }
       crearMarker(map, fin, 'marker-destino', '🏁', null, 'Destino')
+      escalarMarkers()
     }
     const coords = r.geojson.features.flatMap((f) => f.geometry.coordinates)
     if (coords.length) {
