@@ -270,6 +270,19 @@
   color: var(--ambar);
 }
 
+.alerta-escaleras {
+  background: rgba(245, 183, 49, 0.1);
+  border-color: rgba(245, 183, 49, 0.45);
+}
+
+.alerta-escaleras .alerta-titulo {
+  color: var(--ambar);
+}
+
+.alerta-escaleras ul {
+  color: var(--texto-ter);
+}
+
 .alerta-detalles {
   margin-top: 3px !important;
   padding-left: 4px !important;

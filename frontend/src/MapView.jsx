@@ -51,6 +51,8 @@ export default function MapView() {
   const markersRef = useRef([])
   const ultimaBusquedaRef = useRef(null)
   const estacionesMalasRef = useRef(new Map())
+  const escalerasMalasRef = useRef(new Map())
+  const [avisoEscaleras, setAvisoEscaleras] = useState([])
   const alternativasRef = useRef([])
   const dispositivosRef = useRef(null)
 
@@ -69,7 +71,7 @@ export default function MapView() {
 
     map.on('load', async () => {
       try {
-        const [{ geojson, fueraServicio, total, conDatos, estacionesMalas }, lineas] =
+        const [{ geojson, fueraServicio, total, conDatos, estacionesMalas, escalerasMalas }, lineas] =
           await Promise.all([
             cargarDispositivos(),
             fetch('/data/metro_lineas.geojson')
@@ -86,6 +88,7 @@ export default function MapView() {
           )
         }
         estacionesMalasRef.current = estacionesMalas
+        escalerasMalasRef.current = escalerasMalas
         dispositivosRef.current = geojson
         setResumen({ fueraServicio, total, conDatos })
 
@@ -173,7 +176,8 @@ export default function MapView() {
         'circle-sort-key': [
           'match',
           ['get', 'estado'],
-          'fuera_servicio', 2,
+          'fuera_servicio', 3,
+          'escalera_mala', 2,
           'desconocido', 1,
           0,
         ],
@@ -185,6 +189,7 @@ export default function MapView() {
           ['get', 'estado'],
           'operativo', ESTADOS.operativo.color,
           'fuera_servicio', ESTADOS.fuera_servicio.color,
+          'escalera_mala', ESTADOS.escalera_mala.color,
           ESTADOS.desconocido.color,
         ],
         'circle-stroke-width': 1,
@@ -207,16 +212,16 @@ export default function MapView() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tema])
 
-  // Estaciones de la ruta que tienen algún ascensor fuera de servicio.
+  // Estaciones de la ruta presentes en un mapa de equipos caídos.
   // Cada detalle se compara con la dirección del tren (headsign): si el
-  // ascensor sirve a un andén de otra dirección, se marca como dudoso en vez
+  // equipo sirve a un andén de otra dirección, se marca como dudoso en vez
   // de descartarlo (los nombres de terminal de Metro y Google no siempre calzan).
-  function estacionesProblema(r) {
+  function cruzarEstaciones(r, mapa) {
     const vistas = new Set()
     const malas = []
     for (const est of r.estacionesMetro) {
       const clave = normalizarNombre(est.nombre)
-      const info = estacionesMalasRef.current.get(clave)
+      const info = mapa.get(clave)
       if (info && !vistas.has(clave)) {
         vistas.add(clave)
         const detalles = info.detalles.map((d) => ({
@@ -231,6 +236,11 @@ export default function MapView() {
       }
     }
     return malas
+  }
+
+  // Ascensor malo = bloqueante para elegir ruta
+  function estacionesProblema(r) {
+    return cruzarEstaciones(r, estacionesMalasRef.current)
   }
 
   function limpiarMarkers() {
@@ -251,6 +261,8 @@ export default function MapView() {
 
   function dibujarRuta(r) {
     setRuta(r)
+    // Escaleras mecánicas malas en la ruta elegida: advertencia, no bloquea
+    setAvisoEscaleras(cruzarEstaciones(r, escalerasMalasRef.current))
     rutaGeojsonRef.current = r.geojson
     const map = mapRef.current
     map.getSource('ruta').setData(r.geojson)
@@ -301,6 +313,7 @@ export default function MapView() {
     } catch (err) {
       console.error(err)
       setRuta(null)
+      setAvisoEscaleras([])
       limpiarMarkers()
       mapRef.current?.getSource('ruta')?.setData(VACIO)
       setErrorRuta('No se encontró una ruta. Revisa origen y destino.')
@@ -522,6 +535,29 @@ export default function MapView() {
           </div>
         )}
         {avisoOk && <p className="aviso-ok">✓ {avisoOk}</p>}
+
+        {avisoEscaleras.length > 0 && (
+          <div className="alerta alerta-escaleras">
+            <p className="alerta-titulo">⚠ Escaleras mecánicas en pana (el ascensor funciona)</p>
+            <ul>
+              {avisoEscaleras.map((m) => (
+                <li key={m.nombre}>
+                  <strong>{m.nombre}</strong>
+                  <ul className="alerta-detalles">
+                    {m.detalles.map((d, i) => (
+                      <li key={i} className={d.quizasNoAfecta ? 'detalle-dudoso' : ''}>
+                        {d.quizasNoAfecta ? '❓' : '⚠'} {d.texto}
+                        {d.quizasNoAfecta && (
+                          <em> — tu tren va dirección {m.direccionViaje}; podría no afectarte</em>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         {ruta && (
           <div className="itinerario">

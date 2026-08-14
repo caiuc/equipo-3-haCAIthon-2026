@@ -2,7 +2,8 @@ const LIVE_URL = 'https://velocidades.seguimos.cl/?metro=1&all=1'
 
 export const ESTADOS = {
   operativo: { color: '#2dd4a7', label: 'Operativo' },
-  fuera_servicio: { color: '#ff5c5c', label: 'Fuera de servicio' },
+  fuera_servicio: { color: '#ff5c5c', label: 'Ascensor fuera de servicio' },
+  escalera_mala: { color: '#f5b731', label: 'Escalera mecánica en pana' },
   desconocido: { color: '#8b93a7', label: 'Sin información' },
 }
 
@@ -40,34 +41,38 @@ export async function cargarDispositivos() {
   }
 
   let fueraServicio = 0
-  // Estaciones con al menos un ascensor fuera de servicio,
-  // indexadas por nombre normalizado para cruzar con las rutas de Google.
+  // Estaciones con equipos caídos, indexadas por nombre normalizado para
+  // cruzar con las rutas de Google. Ascensor malo = bloqueante (rojo);
+  // solo escalera mala = advertencia (amarillo), el ascensor sigue sirviendo.
   const estacionesMalas = new Map()
+  const escalerasMalas = new Map()
   for (const f of geojson.features) {
     const info = live[f.properties.equipo]
     if (!info) {
       f.properties.estado = 'desconocido'
       continue
     }
-    f.properties.estado = info.estado === 1 ? 'operativo' : 'fuera_servicio'
+    const esAscensor = info.tipo === 'ascensor'
     f.properties.tipo = info.tipo || ''
     f.properties.texto = info.texto || ''
-    if (f.properties.estado === 'fuera_servicio') {
-      fueraServicio++
-      if (info.tipo === 'ascensor') {
-        const clave = normalizarNombre(f.properties.nombre_estacion)
-        if (!estacionesMalas.has(clave)) {
-          estacionesMalas.set(clave, { nombre: f.properties.nombre_estacion, detalles: [] })
-        }
-        // Si el texto dice "dirección <terminal>", el ascensor sirve solo a ese
-        // andén; sin dirección es de acceso/boletería y afecta ambos sentidos.
-        const dir = /direcci[oó]n\s+(.+?)\s*$/i.exec(info.texto || '')
-        estacionesMalas.get(clave).detalles.push({
-          texto: info.texto || f.properties.equipo,
-          direccion: dir ? dir[1] : null,
-        })
-      }
+    if (info.estado === 1) {
+      f.properties.estado = 'operativo'
+      continue
     }
+    fueraServicio++
+    f.properties.estado = esAscensor ? 'fuera_servicio' : 'escalera_mala'
+    const mapa = esAscensor ? estacionesMalas : escalerasMalas
+    const clave = normalizarNombre(f.properties.nombre_estacion)
+    if (!mapa.has(clave)) {
+      mapa.set(clave, { nombre: f.properties.nombre_estacion, detalles: [] })
+    }
+    // Si el texto dice "dirección <terminal>", el equipo sirve solo a ese
+    // andén; sin dirección es de acceso/boletería y afecta ambos sentidos.
+    const dir = /direcci[oó]n\s+(.+?)\s*$/i.exec(info.texto || '')
+    mapa.get(clave).detalles.push({
+      texto: info.texto || f.properties.equipo,
+      direccion: dir ? dir[1] : null,
+    })
   }
 
   return {
@@ -76,5 +81,6 @@ export async function cargarDispositivos() {
     total: geojson.features.length,
     conDatos: Object.keys(live).length > 0,
     estacionesMalas,
+    escalerasMalas,
   }
 }
