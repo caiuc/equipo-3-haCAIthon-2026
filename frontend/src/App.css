@@ -230,6 +230,12 @@
   font-weight: 600;
 }
 
+.duracion-nota {
+  font-size: 0.72rem;
+  font-weight: 400;
+  color: #9aa3b8;
+}
+
 /* Timeline vertical del itinerario */
 .timeline {
   list-style: none;

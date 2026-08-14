@@ -398,7 +398,9 @@ export default function MapView() {
 
         {ruta && (
           <div className="itinerario">
-            <p className="ruta-duracion">⏱ {ruta.duracionMin} min</p>
+            <p className="ruta-duracion">
+              ⏱ ~{ruta.duracionMin} min <span className="duracion-nota">a tu ritmo</span>
+            </p>
             <ol className="timeline">
               {ruta.pasos.map((p, i) => (
                 <li key={i} style={{ '--paso-color': p.tipo === 'transit' ? p.color : '#6b7280' }}>
@@ -413,7 +415,9 @@ export default function MapView() {
                       {p.paradas != null && <p className="paso-meta">{p.paradas} paradas</p>}
                     </>
                   ) : (
-                    <span className="badge badge-caminata">🚶 Caminata</span>
+                    <span className="badge badge-caminata">
+                      🚶 Caminata{p.minutos ? ` · ~${p.minutos} min` : ''}
+                    </span>
                   )}
                 </li>
               ))}

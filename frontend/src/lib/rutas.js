@@ -1,9 +1,14 @@
 const ROUTES_URL = 'https://routes.googleapis.com/directions/v2:computeRoutes'
 const KEY = import.meta.env.VITE_GOOGLE_MAPS_KEY
 
+// Google asume ~1.4 m/s de caminata; una persona con movilidad reducida
+// camina a ~0.9 m/s, así que los tramos a pie toman ~1.5x el tiempo.
+const FACTOR_CAMINATA = 1.5
+
 const FIELD_MASK = [
   'routes.duration',
   'routes.legs.steps.travelMode',
+  'routes.legs.steps.staticDuration',
   'routes.legs.steps.polyline.encodedPolyline',
   'routes.legs.steps.navigationInstruction.instructions',
   'routes.legs.steps.transitDetails.transitLine.name',
@@ -126,24 +131,45 @@ function parsearRuta(route) {
         const direccion = t.headsign || null
         estacionesMetro.push({ nombre: desde, direccion }, { nombre: hasta, direccion })
       }
-    } else if (coords.length) {
-      // Tramos a pie: colapsar instrucciones consecutivas en un solo paso
-      const ultimo = pasos[pasos.length - 1]
-      if (ultimo?.tipo === 'walk') {
-        tramos[tramos.length - 1].geometry.coordinates.push(...coords)
-      } else {
-        pasos.push({ tipo: 'walk', icono: '🚶' })
-        tramos.push({
-          type: 'Feature',
-          properties: { color: '#9aa3b8', caminando: 1 },
-          geometry: { type: 'LineString', coordinates: coords },
-        })
+    } else {
+      // Tramos a pie: colapsar instrucciones consecutivas en un solo paso,
+      // acumulando su duración para el ajuste por movilidad reducida.
+      const sec = parseInt(s.staticDuration, 10) || 0
+      let ultimo = pasos[pasos.length - 1]
+      if (ultimo?.tipo !== 'walk') {
+        if (!coords.length && sec === 0) continue
+        ultimo = { tipo: 'walk', icono: '🚶', segundos: 0, conTramo: false }
+        pasos.push(ultimo)
+      }
+      ultimo.segundos += sec
+      if (coords.length) {
+        if (ultimo.conTramo) {
+          tramos[tramos.length - 1].geometry.coordinates.push(...coords)
+        } else {
+          tramos.push({
+            type: 'Feature',
+            properties: { color: '#9aa3b8', caminando: 1 },
+            geometry: { type: 'LineString', coordinates: coords },
+          })
+          ultimo.conTramo = true
+        }
       }
     }
   }
 
+  // Duración ajustada: el tiempo en vehículo no cambia, las caminatas se
+  // estiran por FACTOR_CAMINATA.
+  const durSec = parseInt(route.duration, 10) || 0
+  let walkSec = 0
+  for (const p of pasos) {
+    if (p.tipo !== 'walk') continue
+    walkSec += p.segundos
+    p.minutos = Math.max(1, Math.round((p.segundos * FACTOR_CAMINATA) / 60))
+  }
+  const ajustadaSec = durSec + walkSec * (FACTOR_CAMINATA - 1)
+
   return {
-    duracionMin: Math.round(parseInt(route.duration, 10) / 60) || null,
+    duracionMin: Math.round(ajustadaSec / 60) || null,
     pasos,
     estacionesMetro,
     geojson: { type: 'FeatureCollection', features: tramos },
