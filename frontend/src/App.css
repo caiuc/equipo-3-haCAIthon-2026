@@ -31,6 +31,76 @@
   color: #9aa3b8;
 }
 
+.buscador {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.buscador input {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: #eef1f8;
+  font-size: 0.85rem;
+  outline: none;
+}
+
+.buscador input:focus {
+  border-color: rgba(45, 212, 167, 0.6);
+}
+
+.buscador input::placeholder {
+  color: #9aa3b8;
+}
+
+.buscador button {
+  background: #2dd4a7;
+  color: #0a0c14;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.buscador button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.itinerario {
+  margin-bottom: 10px;
+  max-height: 40vh;
+  overflow-y: auto;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 8px;
+}
+
+.ruta-duracion {
+  margin: 0 0 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.itinerario ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: #c6cddc;
+}
+
+.paso-icono {
+  margin-right: 4px;
+}
+
 .panel-resumen {
   margin: 0 0 10px;
   font-size: 0.85rem;
