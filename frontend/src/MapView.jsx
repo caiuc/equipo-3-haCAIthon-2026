@@ -8,6 +8,10 @@ import { interpretarConsulta, asistenteDisponible } from './lib/asistente'
 const TOKEN = import.meta.env.VITE_MAPBOX_TOKEN
 const SANTIAGO = [-70.6506, -33.4372]
 const VACIO = { type: 'FeatureCollection', features: [] }
+const ESTILOS_MAPA = {
+  oscuro: 'mapbox://styles/mapbox/dark-v11',
+  claro: 'mapbox://styles/mapbox/light-v11',
+}
 const CAMPUS_SJ = 'Campus San Joaquín UC, Santiago, Chile'
 
 function ubicacionActual() {
@@ -39,6 +43,9 @@ export default function MapView() {
   const [alerta, setAlerta] = useState(null)
   const [avisoOk, setAvisoOk] = useState(null)
   const [consulta, setConsulta] = useState('')
+  const [tema, setTema] = useState(() => localStorage.getItem('rutalibre-tema') || 'oscuro')
+  const temaRef = useRef(tema)
+  const rutaGeojsonRef = useRef(null)
   const ultimaBusquedaRef = useRef(null)
   const estacionesMalasRef = useRef(new Map())
   const alternativasRef = useRef([])
@@ -50,7 +57,7 @@ export default function MapView() {
     mapboxgl.accessToken = TOKEN
     const map = new mapboxgl.Map({
       container: containerRef.current,
-      style: 'mapbox://styles/mapbox/dark-v11',
+      style: ESTILOS_MAPA[temaRef.current] || ESTILOS_MAPA.oscuro,
       center: SANTIAGO,
       zoom: 11.5,
     })
@@ -65,57 +72,7 @@ export default function MapView() {
         dispositivosRef.current = geojson
         setResumen({ fueraServicio, total, conDatos })
 
-        map.addSource('ruta', { type: 'geojson', data: VACIO })
-        map.addLayer({
-          id: 'ruta-transporte',
-          type: 'line',
-          source: 'ruta',
-          filter: ['==', ['get', 'caminando'], 0],
-          layout: { 'line-cap': 'round', 'line-join': 'round' },
-          paint: { 'line-color': ['get', 'color'], 'line-width': 5, 'line-opacity': 0.9 },
-        })
-        map.addLayer({
-          id: 'ruta-caminata',
-          type: 'line',
-          source: 'ruta',
-          filter: ['==', ['get', 'caminando'], 1],
-          paint: {
-            'line-color': '#c6cddc',
-            'line-width': 3,
-            'line-opacity': 0.8,
-            'line-dasharray': [0.5, 2],
-          },
-        })
-
-        map.addSource('dispositivos', { type: 'geojson', data: geojson })
-        map.addLayer({
-          id: 'dispositivos-circulos',
-          type: 'circle',
-          source: 'dispositivos',
-          // Los dispositivos de una estación comparten coordenada: el peor
-          // estado se dibuja encima para que un ascensor malo siempre se vea.
-          layout: {
-            'circle-sort-key': [
-              'match',
-              ['get', 'estado'],
-              'fuera_servicio', 2,
-              'desconocido', 1,
-              0,
-            ],
-          },
-          paint: {
-            'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 3, 14, 7],
-            'circle-color': [
-              'match',
-              ['get', 'estado'],
-              'operativo', ESTADOS.operativo.color,
-              'fuera_servicio', ESTADOS.fuera_servicio.color,
-              ESTADOS.desconocido.color,
-            ],
-            'circle-stroke-width': 1,
-            'circle-stroke-color': 'rgba(10, 12, 20, 0.8)',
-          },
-        })
+        agregarCapas(map)
 
         map.on('click', 'dispositivos-circulos', (e) => {
           const p = e.features[0].properties
@@ -147,6 +104,77 @@ export default function MapView() {
     }
   }, [])
 
+  // Fuentes y capas custom. Se llama al cargar y tras cada cambio de estilo
+  // base (setStyle borra todo lo custom, hay que volver a agregarlo).
+  function agregarCapas(map) {
+    if (map.getSource('dispositivos')) return
+    map.addSource('ruta', { type: 'geojson', data: rutaGeojsonRef.current || VACIO })
+    map.addLayer({
+      id: 'ruta-transporte',
+      type: 'line',
+      source: 'ruta',
+      filter: ['==', ['get', 'caminando'], 0],
+      layout: { 'line-cap': 'round', 'line-join': 'round' },
+      paint: { 'line-color': ['get', 'color'], 'line-width': 5, 'line-opacity': 0.9 },
+    })
+    map.addLayer({
+      id: 'ruta-caminata',
+      type: 'line',
+      source: 'ruta',
+      filter: ['==', ['get', 'caminando'], 1],
+      paint: {
+        'line-color': temaRef.current === 'claro' ? '#5b6577' : '#c6cddc',
+        'line-width': 3,
+        'line-opacity': 0.8,
+        'line-dasharray': [0.5, 2],
+      },
+    })
+
+    map.addSource('dispositivos', { type: 'geojson', data: dispositivosRef.current || VACIO })
+    map.addLayer({
+      id: 'dispositivos-circulos',
+      type: 'circle',
+      source: 'dispositivos',
+      // Los dispositivos de una estación comparten coordenada: el peor
+      // estado se dibuja encima para que un ascensor malo siempre se vea.
+      layout: {
+        'circle-sort-key': [
+          'match',
+          ['get', 'estado'],
+          'fuera_servicio', 2,
+          'desconocido', 1,
+          0,
+        ],
+      },
+      paint: {
+        'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 3, 14, 7],
+        'circle-color': [
+          'match',
+          ['get', 'estado'],
+          'operativo', ESTADOS.operativo.color,
+          'fuera_servicio', ESTADOS.fuera_servicio.color,
+          ESTADOS.desconocido.color,
+        ],
+        'circle-stroke-width': 1,
+        'circle-stroke-color':
+          temaRef.current === 'claro' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(10, 12, 20, 0.8)',
+      },
+    })
+  }
+
+  // Cambio de tema: clase en el documento + estilo base del mapa
+  useEffect(() => {
+    temaRef.current = tema
+    document.documentElement.dataset.theme = tema
+    localStorage.setItem('rutalibre-tema', tema)
+    const map = mapRef.current
+    if (map && mapListo) {
+      map.setStyle(ESTILOS_MAPA[tema])
+      map.once('style.load', () => agregarCapas(map))
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tema])
+
   // Estaciones de la ruta que tienen algún ascensor fuera de servicio.
   // Cada detalle se compara con la dirección del tren (headsign): si el
   // ascensor sirve a un andén de otra dirección, se marca como dudoso en vez
@@ -175,6 +203,7 @@ export default function MapView() {
 
   function dibujarRuta(r) {
     setRuta(r)
+    rutaGeojsonRef.current = r.geojson
     const map = mapRef.current
     map.getSource('ruta').setData(r.geojson)
     const coords = r.geojson.features.flatMap((f) => f.geometry.coordinates)
@@ -324,7 +353,17 @@ export default function MapView() {
     <>
       <div ref={containerRef} className="mapa" />
       <div className="panel">
-        <h1>RutaLibre</h1>
+        <div className="panel-cabecera">
+          <h1>RutaLibre</h1>
+          <button
+            type="button"
+            className="btn-tema"
+            onClick={() => setTema(tema === 'claro' ? 'oscuro' : 'claro')}
+            title={tema === 'claro' ? 'Modo oscuro' : 'Modo claro'}
+          >
+            {tema === 'claro' ? '🌙' : '☀️'}
+          </button>
+        </div>
         <p className="subtitulo">Accesibilidad Metro de Santiago</p>
 
         {asistenteDisponible && (

@@ -7,6 +7,6 @@ body,
 #root {
   margin: 0;
   height: 100%;
-  background: #0a0c14;
+  background: var(--fondo, #0a0c14);
   font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
 }
