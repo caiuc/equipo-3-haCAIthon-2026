@@ -44,6 +44,7 @@ export default function MapView() {
   const [avisoOk, setAvisoOk] = useState(null)
   const [consulta, setConsulta] = useState('')
   const [tema, setTema] = useState(() => localStorage.getItem('rutalibre-tema') || 'oscuro')
+  const [lineasInfo, setLineasInfo] = useState([])
   const temaRef = useRef(tema)
   const rutaGeojsonRef = useRef(null)
   const lineasRef = useRef(null)
@@ -76,6 +77,13 @@ export default function MapView() {
           ])
         if (desmontado) return
         lineasRef.current = lineas
+        if (lineas) {
+          setLineasInfo(
+            lineas.features
+              .map((f) => f.properties)
+              .sort((a, b) => a.ref.localeCompare(b.ref, 'es', { numeric: true }))
+          )
+        }
         estacionesMalasRef.current = estacionesMalas
         dispositivosRef.current = geojson
         setResumen({ fueraServicio, total, conDatos })
@@ -260,11 +268,18 @@ export default function MapView() {
     }
   }
 
+  // Origen opcional: vacío (o "Mi ubicación") usa el GPS del dispositivo,
+  // con fallback a Campus San Joaquín si el usuario no da permiso.
   async function onBuscar(e) {
     e.preventDefault()
-    const o = origen.trim().slice(0, 120)
     const d = destino.trim().slice(0, 120)
-    if (!o || !d || buscando) return
+    let o = origen.trim().slice(0, 120)
+    if (!d || buscando) return
+    if (!o || o === 'Mi ubicación') {
+      const pos = await ubicacionActual()
+      o = pos || CAMPUS_SJ
+      setOrigen(pos ? 'Mi ubicación' : CAMPUS_SJ)
+    }
     await buscar(o, d)
   }
 
@@ -375,6 +390,15 @@ export default function MapView() {
   return (
     <>
       <div ref={containerRef} className="mapa" />
+      {lineasInfo.length > 0 && (
+        <div className="leyenda-lineas">
+          {lineasInfo.map((l) => (
+            <div key={l.ref}>
+              <span className="trazo" style={{ background: l.color }} /> {l.nombre}
+            </div>
+          ))}
+        </div>
+      )}
       <div className="panel">
         <div className="panel-cabecera">
           <h1>RutaLibre</h1>
@@ -406,7 +430,7 @@ export default function MapView() {
         <form className="buscador" onSubmit={onBuscar}>
           <input
             type="text"
-            placeholder="Origen"
+            placeholder="Origen (vacío = usar mi GPS)"
             value={origen}
             maxLength={120}
             onChange={(e) => setOrigen(e.target.value)}
