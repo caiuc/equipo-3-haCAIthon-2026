@@ -198,9 +198,7 @@ export default function MapView() {
       const rutas = await buscarRutas(o, d)
       ultimaBusquedaRef.current = { o, d }
       alternativasRef.current = rutas
-      dibujarRuta(rutas[0])
-      const malas = estacionesProblema(rutas[0])
-      if (malas.length) setAlerta({ malas })
+      await aplicarRutaAccesible(rutas, o, d)
     } catch (err) {
       console.error(err)
       setRuta(null)
@@ -252,10 +250,10 @@ export default function MapView() {
   }
 
   // Botón demo Feria: marca como caído el ascensor de una estación de la
-  // ruta actual, pinta sus puntos en rojo y dispara la alerta de recalculo.
-  function onSimularFalla() {
+  // ruta actual, pinta sus puntos en rojo y la app recalcula sola.
+  async function onSimularFalla() {
     const r = ruta
-    if (!r) return
+    if (!r || buscando) return
     const objetivo = r.estacionesMetro.find(
       (est) => !estacionesMalasRef.current.has(normalizarNombre(est.nombre))
     )
@@ -277,34 +275,43 @@ export default function MapView() {
       mapRef.current?.getSource('dispositivos')?.setData(geojson)
     }
     setAvisoOk(null)
-    setAlerta({ malas: [info], simulada: true })
+    setAlerta(null)
+    if (ultimaBusquedaRef.current && alternativasRef.current.length) {
+      setBuscando(true)
+      try {
+        const { o, d } = ultimaBusquedaRef.current
+        await aplicarRutaAccesible(alternativasRef.current, o, d)
+      } finally {
+        setBuscando(false)
+      }
+    }
   }
 
-  async function onRecalcular() {
-    if (buscando) return
-    setBuscando(true)
-    try {
-      // 1) buscar entre las alternativas ya recibidas una sin estaciones malas
-      let limpia = alternativasRef.current.slice(1).find((r) => estacionesProblema(r).length === 0)
-      // 2) si no hay, pedir ruta solo en bus (evita el Metro por completo)
-      if (!limpia && ultimaBusquedaRef.current) {
-        const { o, d } = ultimaBusquedaRef.current
+  // El usuario siempre tiene movilidad reducida: la app elige sola la mejor
+  // ruta que no pase por estaciones con ascensor malo. Primero la principal,
+  // luego las alternativas de Google y como último recurso solo buses.
+  async function aplicarRutaAccesible(rutas, o, d) {
+    const malas = estacionesProblema(rutas[0])
+    if (!malas.length) {
+      dibujarRuta(rutas[0])
+      return
+    }
+    let limpia = rutas.slice(1).find((r) => estacionesProblema(r).length === 0)
+    if (!limpia) {
+      try {
         const soloBus = await buscarRutas(o, d, { soloBus: true })
         limpia = soloBus.find((r) => estacionesProblema(r).length === 0)
+      } catch (err) {
+        console.error(err)
       }
-      if (limpia) {
-        const evitadas = alerta.malas.map((m) => m.nombre).join(', ')
-        dibujarRuta(limpia)
-        setAlerta(null)
-        setAvisoOk(`Ruta accesible: evita ${evitadas}`)
-      } else {
-        setAlerta({ ...alerta, sinAlternativa: true })
-      }
-    } catch (err) {
-      console.error(err)
-      setAlerta({ ...alerta, sinAlternativa: true })
-    } finally {
-      setBuscando(false)
+    }
+    if (limpia) {
+      dibujarRuta(limpia)
+      setAvisoOk(`Ruta ajustada por accesibilidad: evita ${malas.map((m) => m.nombre).join(', ')}`)
+      setAlerta({ malas, evitada: true })
+    } else {
+      dibujarRuta(rutas[0])
+      setAlerta({ malas, sinAlternativa: true })
     }
   }
 
@@ -361,8 +368,12 @@ export default function MapView() {
         {errorRuta && <p className="panel-error">{errorRuta}</p>}
 
         {alerta && (
-          <div className="alerta">
-            <p className="alerta-titulo">⚠ Ruta con problemas de accesibilidad</p>
+          <div className={alerta.evitada ? 'alerta alerta-evitada' : 'alerta'}>
+            <p className="alerta-titulo">
+              {alerta.evitada
+                ? 'ℹ Estaciones evitadas automáticamente'
+                : '⚠ Sin alternativa accesible: la ruta pasa por'}
+            </p>
             <ul>
               {alerta.malas.map((m) => (
                 <li key={m.nombre}>
@@ -380,12 +391,11 @@ export default function MapView() {
                 </li>
               ))}
             </ul>
-            {alerta.sinAlternativa ? (
-              <p className="alerta-sin">No se encontró una alternativa que evite estas estaciones.</p>
-            ) : (
-              <button type="button" onClick={onRecalcular} disabled={buscando}>
-                {buscando ? 'Recalculando…' : 'Recalcular evitándolas'}
-              </button>
+            {alerta.sinAlternativa && (
+              <p className="alerta-sin">
+                No se encontró una alternativa que evite estas estaciones. Considera pedir asistencia
+                en la estación.
+              </p>
             )}
           </div>
         )}
@@ -404,8 +414,8 @@ export default function MapView() {
           </div>
         )}
 
-        {ruta && !alerta && ruta.estacionesMetro.length > 0 && (
-          <button type="button" className="btn-demo" onClick={onSimularFalla}>
+        {ruta && ruta.estacionesMetro.length > 0 && (
+          <button type="button" className="btn-demo" onClick={onSimularFalla} disabled={buscando}>
             ⚡ Simular falla de ascensor
           </button>
         )}

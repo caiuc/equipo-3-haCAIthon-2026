@@ -7,7 +7,8 @@ export const asistenteDisponible = Boolean(KEY)
 const INSTRUCCION =
   'Extrae de la consulta del usuario: origen, destino y necesidad de accesibilidad. ' +
   'Si no menciona origen, origen debe ser cadena vacía. ' +
-  'necesidad: silla_ruedas, movilidad_reducida, coche_bebe u otra palabra breve (vacía si no menciona). ' +
+  'El usuario de esta app SIEMPRE tiene movilidad reducida: si menciona algo específico ' +
+  '(silla_ruedas, coche_bebe, baston, muletas...) usa esa palabra; si no, necesidad = movilidad_reducida. ' +
   'Los lugares están en Santiago de Chile; devuelve nombres de lugares tal como se buscarían en un mapa. ' +
   'Si el lugar es o suena a una estación de Metro de Santiago, devuélvelo como "Metro <nombre>" (ej: "Metro Irarrázaval").'
 
@@ -44,6 +45,6 @@ export async function interpretarConsulta(texto) {
   return {
     origen: String(out.origen || '').slice(0, 120),
     destino: String(out.destino || '').slice(0, 120),
-    necesidad: String(out.necesidad || '').slice(0, 60),
+    necesidad: String(out.necesidad || 'movilidad_reducida').slice(0, 60),
   }
 }

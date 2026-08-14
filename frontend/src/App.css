@@ -173,6 +173,15 @@
   color: #e8caca;
 }
 
+.alerta-evitada {
+  background: rgba(255, 210, 127, 0.08);
+  border-color: rgba(255, 210, 127, 0.35);
+}
+
+.alerta-evitada .alerta-titulo {
+  color: #ffd27f;
+}
+
 .alerta-detalles {
   margin-top: 3px !important;
   padding-left: 4px !important;
