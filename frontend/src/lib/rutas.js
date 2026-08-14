@@ -97,9 +97,14 @@ function parsearRuta(route) {
       const vehiculo = linea.vehicle?.type || ''
       const desde = t.stopDetails?.departureStop?.name || '?'
       const hasta = t.stopDetails?.arrivalStop?.name || '?'
+      // Metro: "Línea 5". Micro: el número del recorrido ("210") es lo útil.
+      const etiqueta =
+        vehiculo === 'BUS' && linea.nameShort
+          ? `Micro ${linea.nameShort}`
+          : linea.name || linea.nameShort || 'Transporte'
       pasos.push({
         icono: ICONOS[vehiculo] || '🚍',
-        texto: `${linea.name || linea.nameShort || 'Transporte'}: ${desde} → ${hasta} (${t.stopCount ?? '?'} paradas)`,
+        texto: `${etiqueta}: ${desde} → ${hasta} (${t.stopCount ?? '?'} paradas)`,
       })
       if (coords.length) {
         tramos.push({
