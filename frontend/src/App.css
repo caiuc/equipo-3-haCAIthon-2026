@@ -144,6 +144,18 @@
 }
 
 /* Leyenda de líneas de Metro, esquina superior derecha */
+.logo-app {
+  position: fixed;
+  left: 10px;
+  bottom: 38px;
+  z-index: 10;
+  width: 110px;
+  border-radius: 12px;
+  border: 1px solid var(--panel-borde);
+  box-shadow: var(--sombra);
+  pointer-events: none;
+}
+
 .leyenda-lineas {
   position: fixed;
   top: 16px;

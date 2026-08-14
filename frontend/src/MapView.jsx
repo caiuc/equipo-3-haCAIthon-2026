@@ -526,6 +526,7 @@ export default function MapView() {
   return (
     <>
       <div ref={containerRef} className="mapa" />
+      <img className="logo-app" src="/logo.png" alt="RutaLibre" />
       {!mapListo && !error && (
         <div className="cargando">
           <div className="cargando-caja">
