@@ -14,6 +14,9 @@ const ESTILOS_MAPA = {
 }
 const CAMPUS_SJ = 'Campus San Joaquín UC, Santiago, Chile'
 
+const SpeechRecognition =
+  typeof window !== 'undefined' && (window.SpeechRecognition || window.webkitSpeechRecognition)
+
 function ubicacionActual() {
   return new Promise((resolve) => {
     if (!navigator.geolocation) return resolve(null)
@@ -43,6 +46,8 @@ export default function MapView() {
   const [alerta, setAlerta] = useState(null)
   const [avisoOk, setAvisoOk] = useState(null)
   const [consulta, setConsulta] = useState('')
+  const [grabando, setGrabando] = useState(false)
+  const reconocimientoRef = useRef(null)
   const [tema, setTema] = useState(() => localStorage.getItem('rutalibre-tema') || 'oscuro')
   const [lineasInfo, setLineasInfo] = useState([])
   const temaRef = useRef(tema)
@@ -339,7 +344,38 @@ export default function MapView() {
 
   async function onAsistente(e) {
     e.preventDefault()
-    const q = consulta.trim().slice(0, 200)
+    await consultarAsistente(consulta)
+  }
+
+  // Dictado por voz (Web Speech API, Chrome): transcribe y consulta directo
+  function onMicrofono() {
+    if (!SpeechRecognition || buscando) return
+    if (grabando) {
+      reconocimientoRef.current?.stop()
+      return
+    }
+    const rec = new SpeechRecognition()
+    reconocimientoRef.current = rec
+    rec.lang = 'es-CL'
+    rec.interimResults = false
+    rec.maxAlternatives = 1
+    rec.onresult = (ev) => {
+      const texto = ev.results[0]?.[0]?.transcript || ''
+      setConsulta(texto)
+      if (texto.trim()) consultarAsistente(texto)
+    }
+    rec.onerror = () => {
+      setGrabando(false)
+      setErrorRuta('No se pudo capturar el audio. Revisa el permiso del micrófono.')
+    }
+    rec.onend = () => setGrabando(false)
+    setErrorRuta(null)
+    setGrabando(true)
+    rec.start()
+  }
+
+  async function consultarAsistente(texto) {
+    const q = texto.trim().slice(0, 200)
     if (!q || buscando) return
     setBuscando(true)
     setErrorRuta(null)
@@ -479,6 +515,17 @@ export default function MapView() {
             <button type="submit" disabled={!mapListo || buscando} title="Preguntar al asistente">
               ✨
             </button>
+            {SpeechRecognition && (
+              <button
+                type="button"
+                className={grabando ? 'btn-mic grabando' : 'btn-mic'}
+                onClick={onMicrofono}
+                disabled={!mapListo || buscando}
+                title={grabando ? 'Escuchando… toca para detener' : 'Consultar por voz'}
+              >
+                🎤
+              </button>
+            )}
           </form>
         )}
         <form className="buscador" onSubmit={onBuscar}>
