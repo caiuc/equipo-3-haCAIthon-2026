@@ -44,9 +44,10 @@ export function decodificarPolyline(str) {
 
 const ICONOS = { SUBWAY: '🚇', BUS: '🚌', TRAM: '🚊', HEAVY_RAIL: '🚆' }
 
-// Busca ruta en transporte público. Devuelve pasos para el itinerario
-// y un FeatureCollection de tramos coloreados para dibujar en el mapa.
-export async function buscarRuta(origen, destino) {
+// Busca rutas en transporte público (principal + alternativas). Cada ruta trae
+// pasos para el itinerario, estaciones de Metro usadas y un FeatureCollection
+// de tramos coloreados para dibujar en el mapa.
+export async function buscarRutas(origen, destino, { soloBus = false } = {}) {
   const res = await fetch(ROUTES_URL, {
     method: 'POST',
     headers: {
@@ -58,15 +59,20 @@ export async function buscarRuta(origen, destino) {
       origin: { address: origen },
       destination: { address: destino },
       travelMode: 'TRANSIT',
+      computeAlternativeRoutes: true,
       languageCode: 'es-CL',
       regionCode: 'CL',
+      ...(soloBus && { transitPreferences: { allowedTravelModes: ['BUS'] } }),
     }),
   })
   const data = await res.json().catch(() => ({}))
   if (!res.ok) throw new Error(data.error?.message || `Routes API ${res.status}`)
-  const route = data.routes?.[0]
-  if (!route) throw new Error('sin rutas')
+  const rutas = (data.routes || []).map(parsearRuta)
+  if (!rutas.length) throw new Error('sin rutas')
+  return rutas
+}
 
+function parsearRuta(route) {
   const steps = (route.legs || []).flatMap((l) => l.steps || [])
   const pasos = []
   const tramos = []

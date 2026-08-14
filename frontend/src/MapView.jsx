@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
-import { cargarDispositivos, ESTADOS } from './lib/dispositivos'
-import { buscarRuta } from './lib/rutas'
+import { cargarDispositivos, normalizarNombre, ESTADOS } from './lib/dispositivos'
+import { buscarRutas } from './lib/rutas'
 
 const TOKEN = import.meta.env.VITE_MAPBOX_TOKEN
 const SANTIAGO = [-70.6506, -33.4372]
@@ -23,6 +23,10 @@ export default function MapView() {
   const [buscando, setBuscando] = useState(false)
   const [ruta, setRuta] = useState(null)
   const [errorRuta, setErrorRuta] = useState(null)
+  const [alerta, setAlerta] = useState(null)
+  const [avisoOk, setAvisoOk] = useState(null)
+  const estacionesMalasRef = useRef(new Map())
+  const alternativasRef = useRef([])
 
   useEffect(() => {
     if (!TOKEN) return
@@ -39,8 +43,9 @@ export default function MapView() {
 
     map.on('load', async () => {
       try {
-        const { geojson, fueraServicio, total, conDatos } = await cargarDispositivos()
+        const { geojson, fueraServicio, total, conDatos, estacionesMalas } = await cargarDispositivos()
         if (desmontado) return
+        estacionesMalasRef.current = estacionesMalas
         setResumen({ fueraServicio, total, conDatos })
 
         map.addSource('ruta', { type: 'geojson', data: VACIO })
@@ -114,6 +119,35 @@ export default function MapView() {
     }
   }, [])
 
+  // Estaciones de la ruta que tienen algún ascensor fuera de servicio
+  function estacionesProblema(r) {
+    const vistas = new Set()
+    const malas = []
+    for (const est of r.estacionesMetro) {
+      const clave = normalizarNombre(est)
+      const info = estacionesMalasRef.current.get(clave)
+      if (info && !vistas.has(clave)) {
+        vistas.add(clave)
+        malas.push(info)
+      }
+    }
+    return malas
+  }
+
+  function dibujarRuta(r) {
+    setRuta(r)
+    const map = mapRef.current
+    map.getSource('ruta').setData(r.geojson)
+    const coords = r.geojson.features.flatMap((f) => f.geometry.coordinates)
+    if (coords.length) {
+      const bounds = coords.reduce(
+        (b, c) => b.extend(c),
+        new mapboxgl.LngLatBounds(coords[0], coords[0])
+      )
+      map.fitBounds(bounds, { padding: { top: 60, bottom: 60, left: 340, right: 60 } })
+    }
+  }
+
   async function onBuscar(e) {
     e.preventDefault()
     const o = origen.trim().slice(0, 120)
@@ -121,24 +155,48 @@ export default function MapView() {
     if (!o || !d || buscando) return
     setBuscando(true)
     setErrorRuta(null)
+    setAlerta(null)
+    setAvisoOk(null)
     try {
-      const r = await buscarRuta(o, d)
-      setRuta(r)
-      const map = mapRef.current
-      map.getSource('ruta').setData(r.geojson)
-      const coords = r.geojson.features.flatMap((f) => f.geometry.coordinates)
-      if (coords.length) {
-        const bounds = coords.reduce(
-          (b, c) => b.extend(c),
-          new mapboxgl.LngLatBounds(coords[0], coords[0])
-        )
-        map.fitBounds(bounds, { padding: { top: 60, bottom: 60, left: 340, right: 60 } })
-      }
+      const rutas = await buscarRutas(o, d)
+      alternativasRef.current = rutas
+      dibujarRuta(rutas[0])
+      const malas = estacionesProblema(rutas[0])
+      if (malas.length) setAlerta({ malas })
     } catch (err) {
       console.error(err)
       setRuta(null)
       mapRef.current?.getSource('ruta')?.setData(VACIO)
       setErrorRuta('No se encontró una ruta. Revisa origen y destino.')
+    } finally {
+      setBuscando(false)
+    }
+  }
+
+  async function onRecalcular() {
+    if (buscando) return
+    setBuscando(true)
+    try {
+      // 1) buscar entre las alternativas ya recibidas una sin estaciones malas
+      let limpia = alternativasRef.current.slice(1).find((r) => estacionesProblema(r).length === 0)
+      // 2) si no hay, pedir ruta solo en bus (evita el Metro por completo)
+      if (!limpia) {
+        const o = origen.trim().slice(0, 120)
+        const d = destino.trim().slice(0, 120)
+        const soloBus = await buscarRutas(o, d, { soloBus: true })
+        limpia = soloBus.find((r) => estacionesProblema(r).length === 0)
+      }
+      if (limpia) {
+        const evitadas = alerta.malas.map((m) => m.nombre).join(', ')
+        dibujarRuta(limpia)
+        setAlerta(null)
+        setAvisoOk(`Ruta accesible: evita ${evitadas}`)
+      } else {
+        setAlerta({ ...alerta, sinAlternativa: true })
+      }
+    } catch (err) {
+      console.error(err)
+      setAlerta({ ...alerta, sinAlternativa: true })
     } finally {
       setBuscando(false)
     }
@@ -179,6 +237,28 @@ export default function MapView() {
           </button>
         </form>
         {errorRuta && <p className="panel-error">{errorRuta}</p>}
+
+        {alerta && (
+          <div className="alerta">
+            <p className="alerta-titulo">⚠ Ruta con problemas de accesibilidad</p>
+            <ul>
+              {alerta.malas.map((m) => (
+                <li key={m.nombre}>
+                  <strong>{m.nombre}</strong>: {m.detalles.length}{' '}
+                  {m.detalles.length === 1 ? 'ascensor fuera de servicio' : 'ascensores fuera de servicio'}
+                </li>
+              ))}
+            </ul>
+            {alerta.sinAlternativa ? (
+              <p className="alerta-sin">No se encontró una alternativa que evite estas estaciones.</p>
+            ) : (
+              <button type="button" onClick={onRecalcular} disabled={buscando}>
+                {buscando ? 'Recalculando…' : 'Recalcular evitándolas'}
+              </button>
+            )}
+          </div>
+        )}
+        {avisoOk && <p className="aviso-ok">✓ {avisoOk}</p>}
 
         {ruta && (
           <div className="itinerario">
