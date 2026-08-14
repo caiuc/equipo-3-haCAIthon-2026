@@ -96,8 +96,10 @@ function parsearRuta(route) {
       const t = s.transitDetails
       const linea = t.transitLine || {}
       const vehiculo = linea.vehicle?.type || ''
-      const desde = t.stopDetails?.departureStop?.name || '?'
-      const hasta = t.stopDetails?.arrivalStop?.name || '?'
+      // "PB1960-Parada 6 / (M) Pza. Chacabuco" → "Parada 6 / (M) Pza. Chacabuco"
+      const limpiar = (n) => String(n).replace(/^P[A-Z]{1,2}\d+\s*-\s*/, '')
+      const desde = limpiar(t.stopDetails?.departureStop?.name || '?')
+      const hasta = limpiar(t.stopDetails?.arrivalStop?.name || '?')
       // Metro: "Línea 5". Micro: el número del recorrido ("210") es lo útil.
       const etiqueta =
         vehiculo === 'BUS' && linea.nameShort
