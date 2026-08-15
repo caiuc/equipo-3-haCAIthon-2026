@@ -1,4 +1,4 @@
-# CLAUDE.md
+# GEMINI.md
 
 Las instrucciones de este proyecto viven en **[`AGENTS.md`](AGENTS.md)**, que es el archivo que
 leen todos los agentes (Claude Code, opencode, Antigravity, Cursor…).

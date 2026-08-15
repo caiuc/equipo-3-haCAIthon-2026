@@ -61,6 +61,13 @@ El reconocimiento de voz (speech-to-text) **no necesita key**: usa la Web Speech
 
 Producción en Vercel (root directory `frontend`, mismas tres variables de entorno): <https://rutalibre-pi.vercel.app>
 
+## Documentación
+
+- [`AGENTS.md`](AGENTS.md) — contexto, reglas y trampas del proyecto. Punto de entrada para
+  cualquier agente de IA y para quien retome el desarrollo.
+- [`docs/ARQUITECTURA.md`](docs/ARQUITECTURA.md) — cómo funciona el código por dentro.
+- [`docs/OPERACIONES.md`](docs/OPERACIONES.md) — API keys, variables de entorno y deploy.
+
 ## Licencia
 
 MIT — ver [LICENSE](LICENSE).
