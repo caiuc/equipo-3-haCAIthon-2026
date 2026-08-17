@@ -1,0 +1,25 @@
+{
+  "name": "RutaLibre · HaCAithon 2026",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:20",
+  "forwardPorts": [
+    5173
+  ],
+  "portsAttributes": {
+    "5173": {
+      "label": "Aplicación",
+      "onAutoForward": "openPreview"
+    }
+  },
+  "postAttachCommand": {
+    "app": "cd frontend && npm run dev -- --host 0.0.0.0"
+  },
+  "customizations": {
+    "codespaces": {
+      "openFiles": [
+        "README.md"
+      ]
+    }
+  },
+  "postCreateCommand": "cd frontend && npm install",
+  "//": "El ruteo necesita claves de Mapbox, Google Maps y Gemini en frontend/.env.local"
+}
