@@ -17,7 +17,7 @@ Usuario escribe o dicta: "llévame de Plaza Chacabuco a Irarrázaval"
 [asistente.js] Gemini → { origen, destino, necesidad }
         │        (siempre asume movilidad reducida; si no hay origen → GPS)
         ▼
-[rutas.js] Google Routes API (modo TRANSIT) → hasta 3 rutas alternativas
+[rutas.js] Google Routes API (WALK para seguridad, DRIVE para auto, TRANSIT por defecto) → rutas alternativas y corredores seguros
         │        parsearRuta() arma: pasos del itinerario + geometría + estaciones
         ▼
 [MapView.jsx] aplicarRutaAccesible()
@@ -30,7 +30,7 @@ Usuario escribe o dicta: "llévame de Plaza Chacabuco a Irarrázaval"
 [MapView.jsx] dibujarRuta() → polilínea, marcadores 📍🚌🏁 e itinerario en el panel
 ```
 
-## Los cuatro archivos de código
+## Archivos principales de código
 
 ### `lib/dispositivos.js` (80 líneas)
 
@@ -50,9 +50,11 @@ Devuelve además dos mapas indexados por nombre de estación normalizado:
 `normalizarNombre()` existe porque Google y el Metro escriben distinto: quita acentos, mayúsculas
 y puntuación para que "Chile-España" calce con "chile espana".
 
-### `lib/rutas.js` (178 líneas)
+### `lib/rutas.js`
 
-Habla con Google Routes API v2 en modo TRANSIT. Puntos importantes:
+Habla con Google Routes API v2. Usa TRANSIT por defecto, WALK cuando la consulta
+del asistente es de seguridad peatonal y DRIVE para la alternativa en auto.
+Puntos importantes:
 
 - `comoWaypoint()` ancla las direcciones de texto a `", Santiago, Chile"`. **Sin esto**,
   "Irarrázaval" geocodificaba a un pasaje en Maipú y no aparecían rutas.
@@ -62,7 +64,17 @@ Habla con Google Routes API v2 en modo TRANSIT. Puntos importantes:
   el chip de ruta expresa. Las **rutas expresas** (Roja/Verde en hora punta) vienen dentro del
   `headsign` de Google como "(Ruta Roja)"; se extraen a un campo aparte y **se quitan antes de
   comparar direcciones**, o la comparación falla.
+- En seguridad peatonal se consulta primero la ruta base y después hasta dos rutas independientes
+  pasando por celdas seguras. Google no permite alternativas con waypoints, así que cada corredor
+  usa una solicitud separada y los resultados se deduplican antes de puntuar.
 - Los tramos a pie se multiplican por `FACTOR_CAMINATA = 1.5`.
+
+### `lib/seguridad.js`
+Calcula el score relativo por punto, tramo y ruta usando hora, contexto urbano, antecedentes de la
+comuna y cercanía al transporte. `proponerCorredoresSeguros()` identifica los puntos más débiles
+de una ruta peatonal y propone hasta dos waypoints cercanos con mejor score; no calcula geometría,
+solo orienta las consultas adicionales a Google. La duración real de la ruta también se cruza con
+el score: una caminata de más de 90 minutos se marca como no razonable y recomienda pedir auto.
 
 ### `lib/asistente.js` (47 líneas)
 
@@ -71,7 +83,7 @@ Gemini (`gemini-3.1-flash-lite`) con `responseSchema` que **fuerza** la respuest
 tiene movilidad reducida y que nombre los lugares como "Metro \<nombre\>" cuando parezcan
 estaciones (esto mejoró mucho la geocodificación).
 
-### `MapView.jsx` (696 líneas) — índice para no leerlo entero
+### `MapView.jsx` — índice para no leerlo entero
 
 | Líneas | Función | Qué hace |
 |---|---|---|
