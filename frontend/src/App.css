@@ -75,6 +75,8 @@
   flex-direction: column;
   align-items: center;
   gap: 10px;
+  box-sizing: border-box;
+  width: min(480px, calc(100vw - 32px));
   padding: 18px 26px;
   border-radius: 14px;
   background: var(--panel-bg);
@@ -88,6 +90,21 @@
 
 .cargando-caja p {
   margin: 0;
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+
+@media (max-width: 600px) {
+  .cargando {
+    align-items: end;
+    padding: 0 16px 24px;
+    box-sizing: border-box;
+  }
+
+  .cargando-caja {
+    width: 100%;
+    padding: 16px;
+  }
 }
 
 .spinner {
@@ -211,6 +228,100 @@
   margin: 2px 0 10px;
   font-size: 0.8rem;
   color: var(--texto-sec);
+}
+
+.control-calor {
+  margin-bottom: 10px;
+}
+
+.control-metro {
+  margin-bottom: 14px;
+}
+
+.btn-calor {
+  width: 100%;
+  background: var(--input-bg);
+  color: var(--texto);
+  border: 1px solid var(--input-borde);
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.btn-calor.activo {
+  background: rgba(245, 197, 66, 0.16);
+  border-color: rgba(245, 197, 66, 0.55);
+}
+
+.btn-calor:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.btn-metro {
+  width: 100%;
+  background: transparent;
+  color: var(--texto-sec);
+  border: 1px solid var(--input-borde);
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-size: 0.76rem;
+  cursor: pointer;
+}
+
+.btn-metro.activo {
+  background: var(--input-bg);
+  color: var(--texto);
+}
+
+.btn-metro:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.control-calor small {
+  display: block;
+  margin-top: 4px;
+  color: var(--texto-sec);
+  font-size: 0.68rem;
+}
+
+.control-metro small {
+  display: block;
+  margin-top: 4px;
+  color: var(--texto-sec);
+  font-size: 0.68rem;
+}
+
+.leyenda-seguridad {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  margin-top: 6px;
+  color: var(--texto-sec);
+  font-size: 0.62rem;
+}
+
+.punto-seguridad {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 2px;
+  border-radius: 50%;
+  vertical-align: 1px;
+}
+
+.riesgo-alto {
+  background: #b42318;
+}
+
+.precaucion {
+  background: #f07c22;
+}
+
+.riesgo-bajo {
+  background: #2f9e44;
 }
 
 .asistente {
@@ -404,6 +515,26 @@
   color: var(--ok-texto);
 }
 
+.aviso-seguridad {
+  background: rgba(245, 197, 66, 0.12);
+  border: 1px solid rgba(214, 158, 32, 0.45);
+  border-radius: 10px;
+  padding: 8px 12px;
+  margin: 0 0 10px;
+  font-size: 0.8rem;
+  color: var(--ambar);
+}
+
+.aviso-contexto {
+  background: var(--input-bg);
+  border: 1px solid var(--input-borde);
+  border-radius: 10px;
+  padding: 8px 12px;
+  margin: 0 0 10px;
+  font-size: 0.78rem;
+  color: var(--texto-sec);
+}
+
 .btn-demo {
   width: 100%;
   background: var(--input-bg);
@@ -436,6 +567,70 @@
   font-size: 0.72rem;
   font-weight: 400;
   color: var(--texto-sec);
+}
+
+.seguridad-card {
+  border-left: 4px solid var(--texto-sec);
+  background: var(--input-bg);
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin-bottom: 10px;
+}
+
+.seguridad-segura {
+  border-left-color: #2f9e44;
+}
+
+.seguridad-precaucion {
+  border-left-color: #c58a00;
+}
+
+.seguridad-auto {
+  border-left-color: #d64545;
+}
+
+.seguridad-encabezado {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.seguridad-mensaje {
+  margin: 4px 0 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.seguridad-card small {
+  display: block;
+  margin-top: 4px;
+  color: var(--texto-sec);
+  font-size: 0.68rem;
+}
+
+.seguridad-card .seguridad-no-recomendada {
+  color: var(--alerta-titulo);
+  font-weight: 600;
+}
+
+.btn-auto {
+  width: 100%;
+  margin-top: 8px;
+  padding: 7px 10px;
+  border: 1px solid rgba(214, 158, 32, 0.55);
+  border-radius: 8px;
+  background: rgba(245, 197, 66, 0.14);
+  color: var(--ambar);
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-auto:disabled {
+  opacity: 0.6;
+  cursor: default;
 }
 
 /* Timeline vertical del itinerario */
@@ -519,6 +714,12 @@
 .badge-caminata {
   background: var(--badge-caminata-bg);
   color: var(--badge-caminata-texto);
+  font-weight: 600;
+}
+
+.badge-auto {
+  background: rgba(71, 85, 105, 0.16);
+  color: var(--texto-ter);
   font-weight: 600;
 }
 
@@ -628,6 +829,11 @@
 
 .marker-transporte {
   background: #4da3ff;
+}
+
+.marker-parada {
+  background: #7c3aed;
+  font-size: 12px;
 }
 
 .marker-destino {
