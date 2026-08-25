@@ -83,6 +83,8 @@ npm run validar-seguridad # validación local de seguridad y selección
   Tiene toda la investigación de datos, algoritmo, arquitectura y cronograma.
 - **Vas a desplegar, tocar API keys o variables de entorno** → lee `docs/OPERACIONES.md`.
   Contiene trampas que ya rompieron el sitio una vez.
+- **Vas a configurar Codex, MCP, GitHub, navegador o permisos** → lee `docs/ENTORNO_CODEX.md`.
+  Conserva el estado verificado y el orden acordado para separar RutaLibre de Ojo al Paso.
 - **Solo respondes preguntas sobre el proyecto** → con este archivo basta.
 
 ## 7. Trampas conocidas (ya nos costaron caro)
