@@ -5,6 +5,15 @@ import { cargarDispositivos, normalizarNombre, ESTADOS } from './lib/dispositivo
 import { buscarRutas, buscarRutasPlan, buscarRutasSeguras, combinarRutas } from './lib/rutas'
 import { crearHeatmapSeguridad, elegirRutaSegura, puntuarRuta, recomendacionSeguridad } from './lib/seguridad'
 import { interpretarConsulta, asistenteDisponible } from './lib/asistente'
+import DemoControls from './demo/DemoControls'
+import { useDemoFlow } from './demo/useDemoFlow'
+import {
+  agregarCapasDemo,
+  alternarRiesgosDemo,
+  crearMarcadoresDemo,
+  mostrarRutasDemo,
+  ocultarRutasDemo,
+} from './demo/demoMap'
 
 const TOKEN = import.meta.env.VITE_MAPBOX_TOKEN
 const SANTIAGO = [-70.6506, -33.4372]
@@ -92,6 +101,9 @@ export default function MapView() {
   const alternativasRef = useRef([])
   const planTramosRef = useRef([])
   const dispositivosRef = useRef(null)
+  const demoMarkersRef = useRef([])
+  const demoRutasVisiblesRef = useRef(false)
+  const demoRiesgosVisiblesRef = useRef(false)
 
   // El mapa se monta una sola vez; sus capas se actualizan por eventos de Mapbox.
   // oxlint-disable react-hooks/exhaustive-deps
@@ -323,6 +335,10 @@ export default function MapView() {
         'circle-stroke-color':
           temaRef.current === 'claro' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(10, 12, 20, 0.8)',
       },
+    })
+    agregarCapasDemo(map, {
+      rutasVisibles: demoRutasVisiblesRef.current,
+      riesgosVisibles: demoRiesgosVisiblesRef.current,
     })
   }
 
@@ -874,6 +890,78 @@ export default function MapView() {
     setAlerta({ malas, evitada: tramosAjustados > 0, sinAlternativa: tramoSinAlternativa })
   }
 
+  function limpiarMarcadoresDemo() {
+    for (const marker of demoMarkersRef.current) marker.remove()
+    demoMarkersRef.current = []
+  }
+
+  function iniciarDemo() {
+    const map = mapRef.current
+    setOrigen('')
+    setDestino('')
+    setConsulta('')
+    setRuta(null)
+    setSeguridadRuta(null)
+    setContextoRuta(null)
+    setErrorRuta(null)
+    setAlerta(null)
+    setAvisoOk(null)
+    setMotivoRuta(null)
+    setAvisoEscaleras([])
+    setCalorVisible(false)
+    setMetroVisible(false)
+    rutaGeojsonRef.current = null
+    demoRutasVisiblesRef.current = false
+    demoRiesgosVisiblesRef.current = false
+    limpiarMarkers()
+    limpiarMarcadoresDemo()
+    map?.getSource('ruta')?.setData(VACIO)
+    ocultarRutasDemo(map)
+    for (const capa of ['seguridad-celdas', 'metro-lineas', 'dispositivos-circulos']) {
+      if (map?.getLayer(capa)) map.setLayoutProperty(capa, 'visibility', 'none')
+    }
+  }
+
+  function mostrarRutasDeDemo() {
+    const map = mapRef.current
+    if (!map) return
+    demoRutasVisiblesRef.current = true
+    demoRiesgosVisiblesRef.current = false
+    mostrarRutasDemo(map)
+    limpiarMarcadoresDemo()
+    demoMarkersRef.current = crearMarcadoresDemo(map)
+  }
+
+  function ocultarRutasDeDemo() {
+    const map = mapRef.current
+    demoRutasVisiblesRef.current = false
+    demoRiesgosVisiblesRef.current = false
+    limpiarMarcadoresDemo()
+    if (map) ocultarRutasDemo(map)
+  }
+
+  function alternarRiesgosDeDemo(visible) {
+    demoRiesgosVisiblesRef.current = visible
+    const map = mapRef.current
+    if (map) alternarRiesgosDemo(map, visible)
+  }
+
+  function salirDemo() {
+    ocultarRutasDeDemo()
+    setOrigen('')
+    setDestino('')
+  }
+
+  const demo = useDemoFlow({
+    onAlternarRiesgos: alternarRiesgosDeDemo,
+    onIniciar: iniciarDemo,
+    onMostrarRutas: mostrarRutasDeDemo,
+    onOcultarRutas: ocultarRutasDeDemo,
+    onSalir: salirDemo,
+    setDestino,
+    setOrigen,
+  })
+
   if (!TOKEN) {
     return (
       <div className="aviso-token">
@@ -885,6 +973,7 @@ export default function MapView() {
   return (
     <>
       <div ref={containerRef} className="mapa" />
+      <DemoControls demo={demo} deshabilitado={!mapListo} />
       {!mapListo && (
         <div className="cargando">
           <div className="cargando-caja">
@@ -911,7 +1000,7 @@ export default function MapView() {
           ))}
         </div>
       )}
-      <div className="panel">
+      <div className={demo.activo ? 'panel panel-demo-activa' : 'panel'}>
         <div className="panel-cabecera">
           <h1>Ojo al Paso</h1>
           <button

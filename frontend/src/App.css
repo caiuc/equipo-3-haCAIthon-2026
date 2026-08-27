@@ -60,6 +60,240 @@
   inset: 0;
 }
 
+/* Demo guiada: aislada del flujo real y sin llamadas a APIs */
+.demo-controles {
+  position: fixed;
+  left: 16px;
+  bottom: 28px;
+  z-index: 40;
+  display: flex;
+  width: 250px;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--panel-borde);
+  border-radius: 14px;
+  background: var(--panel-bg);
+  box-shadow: var(--sombra);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.demo-controles:not(.demo-controles-activos) {
+  width: auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.demo-paso {
+  color: var(--texto-sec);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.demo-boton,
+.demo-riesgos {
+  border: 0;
+  border-radius: 10px;
+  padding: 11px 15px;
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 750;
+  cursor: pointer;
+  transition: box-shadow 0.16s ease, transform 0.16s ease, background 0.16s ease;
+}
+
+.demo-boton:hover:not(:disabled),
+.demo-riesgos:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.demo-boton:disabled {
+  cursor: default;
+  opacity: 0.58;
+}
+
+.demo-boton-iniciar,
+.demo-boton-siguiente {
+  background: #10b981;
+  color: #ffffff;
+  box-shadow: 0 8px 24px rgba(16, 185, 129, 0.34);
+}
+
+.demo-boton-iniciar {
+  min-width: 180px;
+  padding: 13px 18px;
+  font-size: 0.92rem;
+}
+
+.demo-boton-anterior {
+  border: 1px solid var(--input-borde);
+  background: var(--input-bg);
+  color: var(--texto-ter);
+}
+
+.demo-riesgos {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 40;
+  border: 1px solid rgba(220, 38, 38, 0.38);
+  background: rgba(255, 255, 255, 0.94);
+  color: #b91c1c;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.2);
+}
+
+.demo-riesgos.activo {
+  background: #dc2626;
+  color: #ffffff;
+}
+
+.demo-ruta-card {
+  box-sizing: border-box;
+  width: 224px;
+  padding: 12px 14px;
+  border: 1px solid rgba(100, 116, 139, 0.34);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.2);
+  color: #172033;
+  pointer-events: none;
+}
+
+.demo-ruta-card.destacada {
+  z-index: 2;
+  border: 2px solid #10b981;
+  box-shadow: 0 12px 34px rgba(16, 185, 129, 0.32);
+}
+
+.demo-ruta-card strong {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 0.86rem;
+}
+
+.demo-ruta-fila {
+  display: grid;
+  grid-template-columns: 23px 1fr;
+  align-items: start;
+  gap: 4px;
+  margin-top: 5px;
+  font-size: 0.72rem;
+  font-weight: 760;
+  line-height: 1.35;
+}
+
+.demo-ruta-icono {
+  text-align: center;
+  line-height: 1.2;
+}
+
+.demo-ruta-fila.neutro {
+  color: #172033;
+}
+
+.demo-ruta-fila.positivo,
+.demo-ruta-componentes {
+  color: #047857;
+}
+
+.demo-ruta-fila.negativo {
+  color: #c2410c;
+}
+
+.demo-ruta-componentes {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin: 8px 0 0 31px;
+  padding-left: 13px;
+  font-size: 0.67rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.demo-ruta-componentes li {
+  padding-left: 1px;
+}
+
+.demo-extremo {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border: 3px solid #ffffff;
+  border-radius: 999px;
+  box-shadow: 0 5px 16px rgba(15, 23, 42, 0.3);
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.demo-extremo-origen {
+  background: #2563eb;
+}
+
+.demo-extremo-destino {
+  background: #111827;
+}
+
+@media (max-width: 700px) {
+  .panel.panel-demo-activa {
+    top: 8px;
+    right: 8px;
+    left: 8px;
+    width: auto;
+    max-width: none;
+    max-height: 215px;
+    padding: 12px 14px;
+  }
+
+  .panel-demo-activa .control-calor,
+  .panel-demo-activa .control-metro,
+  .panel-demo-activa .asistente {
+    display: none;
+  }
+
+  .panel-demo-activa .subtitulo {
+    margin-bottom: 7px;
+  }
+
+  .demo-controles {
+    right: 12px;
+    bottom: 24px;
+    left: 12px;
+    width: auto;
+  }
+
+  .demo-controles:not(.demo-controles-activos) {
+    right: auto;
+  }
+
+  .demo-riesgos {
+    top: auto;
+    right: 12px;
+    bottom: 190px;
+    left: 12px;
+  }
+
+  .demo-ruta-card {
+    width: 145px;
+    padding: 9px 10px;
+  }
+
+  .demo-ruta-card[data-demo-ruta='equilibrada'] {
+    width: 184px;
+  }
+
+  .demo-ruta-card[data-demo-ruta='segura'] {
+    width: 135px;
+  }
+}
+
 /* Indicador de carga inicial */
 .cargando {
   position: fixed;
